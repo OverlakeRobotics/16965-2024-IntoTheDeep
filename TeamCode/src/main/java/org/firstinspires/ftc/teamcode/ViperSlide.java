@@ -32,6 +32,8 @@ public class ViperSlide {
     private void setViperPowers(double power) {
         left.setPower(power);
         right.setPower(power);
+
+
     }
 
     private void setPivotPowers(double power) {
