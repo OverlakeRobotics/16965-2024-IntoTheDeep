@@ -33,6 +33,8 @@ public class MecanumRobotController {
     public static double Kd = 0.002;
     public static double Ki = 0.00;
 
+    public static MiniPID miniPID = new MiniPID(0.07, 0.0, 0.002);
+
     private final DcMotor backLeft;
     private final DcMotor backRight;
     private final DcMotor frontLeft;
@@ -88,6 +90,8 @@ public class MecanumRobotController {
         this(backLeft, backRight, frontLeft, frontRight, gyro, null);
     }
 
+
+
     // Behavior: Moves the robot using a given forward, strafe, and turn power.
     // Params:
     //      - double forward: The forward power for the robot.
@@ -131,7 +135,7 @@ public class MecanumRobotController {
             double derivative = (error - lastError) / PIDTimer.seconds();
             integralSum += error * PIDTimer.seconds();
 
-            double headingCorrection = -((Kp * error) + (Kd * derivative) + (Ki * integralSum));
+            double headingCorrection = -((MiniPID.P * error) + (MiniPID.D * derivative) + (MiniPID.I * integralSum));
             headingCorrection = normalize(headingCorrection);
             lastError = error;
             PIDTimer.reset();
@@ -297,29 +301,29 @@ public class MecanumRobotController {
         }
         if (kTuner == 0) {
             if (gamepad1.dpad_down) {
-                Kp -= 0.001;
+                miniPID.setP(MiniPID.P - 0.001);
             } else if (gamepad1.dpad_up) {
-                Kp += 0.001;
+                miniPID.setP(MiniPID.P + 0.001);
             }
             telemetry.addData("Tuning", "proportional");
         } else if (kTuner == 1) {
             if (gamepad1.dpad_down) {
-                Ki -= 0.000001;
+                miniPID.setP(MiniPID.I - 0.000001);
             } else if (gamepad1.dpad_up) {
-                Ki += 0.000001;
+                miniPID.setP(MiniPID.I + 0.000001);
             }
             telemetry.addData("Tuning", "integral");
         } else {
             if (gamepad1.dpad_down) {
-                Kd -= 0.00001;
+                miniPID.setP(MiniPID.D - 0.00001);
             } else if (gamepad1.dpad_up) {
-                Kd += 0.00001;
+                miniPID.setP(MiniPID.D + 0.00001);
             }
             telemetry.addData("Tuning", "derivative");
         }
-        telemetry.addData("Kp", Kp);
-        telemetry.addData("Ki", Ki);
-        telemetry.addData("Kd", Kd);
+        telemetry.addData("P", MiniPID.P);
+        telemetry.addData("I", MiniPID.I);
+        telemetry.addData("D", MiniPID.D);
         telemetry.addData("", "");
     }
 
