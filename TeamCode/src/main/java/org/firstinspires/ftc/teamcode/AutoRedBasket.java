@@ -27,17 +27,30 @@ public class AutoRedBasket extends LinearOpMode {
 
         robotController.distanceDrive(12, 7, DRIVE_SPEED);
         robotController.turnTo(30, TURN_SPEED);
+        robotController.sleep(2);
         robotController.turnTo(145, TURN_SPEED);
         robotController.distanceDrive(12, 145, DRIVE_SPEED);
-        robotController.turnTo(0, TURN_SPEED);
-        robotController.distanceDrive(8, 0, DRIVE_SPEED);
-        robotController.turnTo(180, TURN_SPEED);
-        robotController.distanceDrive(8, 180, DRIVE_SPEED);
-        robotController.turnTo(180, TURN_SPEED);
+        robotController.sleep(2);
         robotController.turnTo(10, TURN_SPEED);
         robotController.distanceDrive(8, 10, DRIVE_SPEED);
+        robotController.sleep(2);
         robotController.turnTo(180, TURN_SPEED);
-        robotController.distanceDrive(8, 180, DRIVE_SPEED);
+        robotController.distanceDrive(10, 180, DRIVE_SPEED);
+        robotController.turnTo(135, TURN_SPEED);
+        robotController.sleep(2);
+        robotController.turnTo(157, TURN_SPEED);
+//        robotController.turnTo(10, TURN_SPEED);
+//        robotController.distanceDrive(8, 10, DRIVE_SPEED);
+//        robotController.turnTo(40, TURN_SPEED);
+//        robotController.sleep(2);
+//        robotController.turnTo(180, TURN_SPEED);
+//        robotController.distanceDrive(8, 180, DRIVE_SPEED);
+//        robotController.turnTo(135, TURN_SPEED);
+//        robotController.sleep(2);
+        //robotController.turnTo(315, TURN_SPEED);
+        robotController.distanceDrive(32, 337, DRIVE_SPEED);
+        robotController.turnTo(270, TURN_SPEED);
+        robotController.distanceDrive(6,270, DRIVE_SPEED);
     }
 
     public void initialize() {
@@ -59,18 +72,18 @@ public class AutoRedBasket extends LinearOpMode {
         frontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         frontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        IMU gyro = hardwareMap.get(IMU.class, "imu2");
+        IMU gyro = hardwareMap.get(IMU.class, "imu");
         gyro.resetYaw();
 
-        viperSlide = new ViperSlide(
-                hardwareMap.get(DcMotorEx.class, "VIPERLEFT"),
-                hardwareMap.get(DcMotorEx.class, "VIPERRIGHT")
-        );
-        pivot = new Pivot(
-                hardwareMap.get(DcMotorEx.class, "PIVOTLEFT"),
-                hardwareMap.get(DcMotorEx.class, "PIVOTRIGHT")
-        );
-        intake = new Intake(hardwareMap);
+//        viperSlide = new ViperSlide(
+//                hardwareMap.get(DcMotorEx.class, "VIPERLEFT"),
+//                hardwareMap.get(DcMotorEx.class, "VIPERRIGHT")
+//        );
+//        pivot = new Pivot(
+//                hardwareMap.get(DcMotorEx.class, "PIVOTLEFT"),
+//                hardwareMap.get(DcMotorEx.class, "PIVOTRIGHT")
+//        );
+//        intake = new Intake(hardwareMap);
         robotController = new MecanumRobotController(backLeft, backRight, frontLeft, frontRight, gyro, this);
 
         telemetry.addData("Status", "Initialized");

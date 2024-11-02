@@ -31,7 +31,7 @@ public class MecanumRobotController {
     public static final double INCHES_LEFT_TO_SLOW_DOWN = 10;
     public static double Kp = 0.07;
     public static double Kd = 0.002;
-    public static double Ki = 0.00;
+    public static double Ki = 0.01;
 
     public static MiniPID miniPID = new MiniPID(0.07, 0.0, 0.002);
 
