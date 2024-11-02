@@ -24,17 +24,20 @@ public class AutoRedBasket extends LinearOpMode {
         // Initialize
         initialize();
         waitForStart();
-        // robotController.turnTo(45, TURN_SPEED);
-        robotController.distanceDrive(29, 180, DRIVE_SPEED);
-        robotController.sleep(2);
-        robotController.distanceDrive(7, 0, DRIVE_SPEED);
+
+        robotController.distanceDrive(12, 7, DRIVE_SPEED);
+        robotController.turnTo(30, TURN_SPEED);
+        robotController.turnTo(145, TURN_SPEED);
+        robotController.distanceDrive(12, 145, DRIVE_SPEED);
+        robotController.turnTo(0, TURN_SPEED);
+        robotController.distanceDrive(8, 0, DRIVE_SPEED);
         robotController.turnTo(180, TURN_SPEED);
-        robotController.distanceDrive(60, 270, DRIVE_SPEED);
-        robotController.distanceDrive(7, 180, DRIVE_SPEED);
-        robotController.sleep(2);
-        robotController.distanceDrive(24, 0, DRIVE_SPEED);
-        robotController.turnTo(135, TURN_SPEED);
-        robotController.sleep(5);
+        robotController.distanceDrive(8, 180, DRIVE_SPEED);
+        robotController.turnTo(180, TURN_SPEED);
+        robotController.turnTo(10, TURN_SPEED);
+        robotController.distanceDrive(8, 10, DRIVE_SPEED);
+        robotController.turnTo(180, TURN_SPEED);
+        robotController.distanceDrive(8, 180, DRIVE_SPEED);
     }
 
     public void initialize() {
