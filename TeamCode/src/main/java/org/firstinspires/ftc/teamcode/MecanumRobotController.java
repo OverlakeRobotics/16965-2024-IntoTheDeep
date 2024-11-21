@@ -468,8 +468,8 @@ public class MecanumRobotController {
     // Behavior: Get the current IMU heading in degrees.
     // Returns: The current robots angle in degrees on the range (-180, 180]
     private double getAngleImuDegrees() {
-        return normalize(photoSensor.getPosition().h);
-//                gyro.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES));
+        return normalize(//photoSensor.getPosition().h);
+                gyro.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES));
     }
 
     // Behavior: Sends various information to the telemetry to be read. The information sent is
