@@ -8,12 +8,12 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 public class ViperSlide {
     private DcMotorEx leftMotor;
     private DcMotorEx rightMotor;
-    public static final double DEFAULT_POWER = 0.8;
+    public static final double DEFAULT_POWER = 0.65;
     public static final int POSITION_TOLERANCE = 10;
     public static final int MOVE_COUNTS_PER_INCH = 111;
     public static final double BASE_ARM_LENGTH = 12;
     public static final double CHASSIS_TO_PIVOT_LENGTH = 9;
-    public static final int MIN_POSITION = 10;
+    public static final int MIN_POSITION = 20;
     public static final int MAX_POSITION = 3000;   // Adjust for your robot
     public static final int MAX_POSITION_HANG = 1320;
 

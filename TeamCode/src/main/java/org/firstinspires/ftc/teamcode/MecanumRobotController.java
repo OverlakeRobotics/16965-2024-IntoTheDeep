@@ -9,6 +9,8 @@
 //      P: Parameters, the list of parameters and explanations of them.
 
 package org.firstinspires.ftc.teamcode;
+import android.util.Log;
+
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.hardware.sparkfun.SparkFunOTOS;
@@ -29,16 +31,17 @@ public class MecanumRobotController {
     public static final boolean DEFAULT_SEND_TELEMETRY = true;
     public static final double FORWARD_COUNTS_PER_INCH = 43.80;
     public static final double STRAFE_COUNTS_PER_INCH = 50.58;
-    public static final double HEADING_CORRECTION_POWER = 1.0;
+    public static final double HEADING_CORRECTION_POWER = 2.0;
     public static final double MAX_CORRECTION_ERROR = 2.0;
     public static final double TURN_SPEED_RAMP = 4.0;
     public static final double MIN_VELOCITY_TO_SMOOTH_TURN = 115;
     public static final double INCHES_LEFT_TO_SLOW_DOWN = 3;
-    public static final double TURN_DRIFT_TIME = 0.15;
+    public static final double INCHES_LEFT_TO_SPEED_UP = 5;
+    public static final double TURN_DRIFT_TIME = 0;
     public static final double MIN_DIST_TO_STOP = 0.1;
-    public static double Kp = 0.1;
-    public static double Kd = 0.0002;
-    public static double Ki = 0.00;
+    public static double Kp = 0.05;
+    public static double Kd = 0.009;
+    public static double Ki = 0.0007;
     public static final double ANGULAR_SCALAR = 0.9954681619;
     public static double LINEAR_SCALAR = 1.127;
 
@@ -166,6 +169,8 @@ public class MecanumRobotController {
         // stopping, and if it gets hit by something super fast, it doesn't try to correct its
         // heading back into that object.
         if ((robot == null && currentAngularVelocity > MIN_VELOCITY_TO_SMOOTH_TURN) || turn != 0 || runtime.seconds() - turnStoppedTime < TURN_DRIFT_TIME) {
+            robot.telemetry.addData("thing", runtime.seconds() - turnStoppedTime);
+            Log.d("TimeDiff", Double.toString(runtime.seconds() - turnStoppedTime));
             wantedHeading = currentHeading;
         } else {
             double error = normalize(wantedHeading - currentHeading);
@@ -236,6 +241,7 @@ public class MecanumRobotController {
             throw new RuntimeException("Tried to run distanceDrive but LinearOpMode object not given!");
         }
         double currentHeading = getAngleImuDegrees();
+        double startingHeading = currentHeading;
         // This still needs testing.
         double forward;
         double strafe;
@@ -271,6 +277,7 @@ public class MecanumRobotController {
 
         while ((backLeft.isBusy() || backRight.isBusy() || frontLeft.isBusy() || frontRight.isBusy())
                 && robot.opModeIsActive()) {
+            wantedHeading = currentHeading;
             double distanceToDestination = (Math.abs(backLeftTarget - backLeft.getCurrentPosition()) +
                     Math.abs(backRightTarget - backRight.getCurrentPosition()) +
                     Math.abs(frontLeftTarget - frontLeft.getCurrentPosition()) +
@@ -282,9 +289,9 @@ public class MecanumRobotController {
             robot.telemetry.addData("Distance To Target", distanceToDestination * moveCountMult);
             robot.telemetry.addData("", "");
             if (distanceToDestinationInches <= INCHES_LEFT_TO_SLOW_DOWN) {
-                move(0.01 + speed * Math.sin(distanceToDestinationInches / INCHES_LEFT_TO_SLOW_DOWN * (Math.PI / 2)), 0.0, 0.0, -HEADING_CORRECTION_POWER);
+                move(0.01 + speed * Math.sin(distanceToDestinationInches / INCHES_LEFT_TO_SLOW_DOWN * (Math.PI / 2)), 0.0, 0.0, HEADING_CORRECTION_POWER);
             } else {
-                move(speed, 0.0, 0.0, -HEADING_CORRECTION_POWER);
+                move(speed, 0.0, 0.0, HEADING_CORRECTION_POWER);
             }
 
             if (distanceToDestinationInches < 1) {
@@ -448,6 +455,8 @@ public class MecanumRobotController {
             robot.telemetry.addData("Current Action", "Turning To Angle");
             robot.telemetry.addData("Degrees to destination", wantedHeading - getAngleImuDegrees());
             robot.telemetry.addData("", "");
+            wantedHeading = angle;
+            robot.telemetry.addData("Wanted Angle Turn To", angle);
             move(0, 0, 0, speed);
         }
         // Stop the robot

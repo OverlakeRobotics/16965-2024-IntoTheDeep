@@ -19,10 +19,10 @@ public class Intake {
 //    public static final double RIGHT_CLOSED_POSITION = 0.7914;
     public static double LARGE_OPEN_POSITION = 0;
     public static double NORMAL_OPEN_POSITION = 0.1;
-    public static double CLOSED_POSITION = 0.18;
-    public static final double HINGE_MAX_POSITION = 0.65;
+    public static double CLOSED_POSITION = 0.21;
+    public static final double HINGE_MAX_POSITION = 1.0;
     public static final double WRIST_MIN_POSITION = 0;
-    public static final double WRIST_MAX_POSITION = 0.6;
+    public static final double WRIST_MAX_POSITION = 1.0;
     public static final double WRIST_NEUTRAL_POSITION = 0.3;
     public static final double WHACK_POSITION = 0.2;
     public static final double UNWHACK_POSITION = 0.0;
@@ -36,11 +36,11 @@ public class Intake {
 
 //        whacker = hardwareMap.get(Servo.class, "WHACKER");
 
-         clawLeft.setDirection(Servo.Direction.FORWARD);
-         clawRight.setDirection(Servo.Direction.REVERSE);
+         clawLeft.setDirection(Servo.Direction.REVERSE);
+         clawRight.setDirection(Servo.Direction.FORWARD);
          hingeLeft.setDirection(Servo.Direction.FORWARD);
          hingeRight.setDirection(Servo.Direction.REVERSE);
-         wrist.setDirection(Servo.Direction.REVERSE);
+         wrist.setDirection(Servo.Direction.FORWARD);
 //         whacker.setDirection(Servo.Direction.REVERSE);
 
 //        clawLeft.scaleRange(LEFT_CLOSED_POSITION, LEFT_CLOSED_POSITION + MOVING_DISTANCE);
@@ -66,13 +66,14 @@ public class Intake {
     }
 
     public void hingeTo(double position) {
+        //30 - 48
         position = Math.min(Math.max(0, position), HINGE_MAX_POSITION);
         hingeLeft.setPosition(position);
         hingeRight.setPosition(position);
     }
 
     public void hingeToDegree(int degree) {
-        double position = 0.65 - (0.65 / 180) * degree;
+        double position = HINGE_MAX_POSITION - (HINGE_MAX_POSITION / 187.5) * (degree + 30);
         position = Math.min(Math.max(0, position), HINGE_MAX_POSITION);
         hingeLeft.setPosition(position);
         hingeRight.setPosition(position);
@@ -84,7 +85,7 @@ public class Intake {
     }
 
     public void setWristDegree(int degree) {
-        double position = WRIST_NEUTRAL_POSITION + (WRIST_MAX_POSITION / 180) * degree;
+        double position = WRIST_NEUTRAL_POSITION + (WRIST_MAX_POSITION / 270) * degree;
         position = Math.min(Math.max(WRIST_MIN_POSITION, position), WRIST_MAX_POSITION);
         wrist.setPosition(position);
     }
@@ -127,8 +128,16 @@ public class Intake {
         return hingeLeft.getPosition();
     }
 
-    public double getHingePositionDegrees() {
-        return 180 - (hingeLeft.getPosition() / HINGE_MAX_POSITION * 180);
+    public int getHingePositionDegrees() {
+        return (int) (187.5 - (hingeLeft.getPosition() / HINGE_MAX_POSITION * 187.5)) - 30;
+    }
+
+    public double getWristPosition() {
+        return wrist.getPosition();
+    }
+
+    public int getWristPositionDegrees() {
+        return (int) ((wrist.getPosition() - WRIST_NEUTRAL_POSITION) / WRIST_MAX_POSITION * 270);
     }
 
 //    public double getWhackerPosition() {

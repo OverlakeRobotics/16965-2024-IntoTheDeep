@@ -7,7 +7,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 public class Pivot {
     private DcMotorEx leftMotor;
     private DcMotorEx rightMotor;
-    private static final double DEFAULT_POWER = 0.8;
+    private static final double DEFAULT_POWER = 0.6;
     private static final int POSITION_TOLERANCE = 10;
     public static final int MIN_POSITION = -1750;
     public static final int MAX_POSITION = 200;
@@ -123,6 +123,10 @@ public class Pivot {
     public boolean isDrifting() {
         int positionDifference = Math.abs(leftMotor.getCurrentPosition() - rightMotor.getCurrentPosition());
         return positionDifference > POSITION_TOLERANCE;
+    }
+
+    public void setAngleDegrees(double degrees) {
+        setTargetPosition((int)(-((10.5 * degrees) + 430)));
     }
 
     public double getAngleDegrees() {
