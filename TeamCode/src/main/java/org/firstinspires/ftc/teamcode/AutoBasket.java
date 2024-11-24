@@ -142,7 +142,8 @@ public class AutoBasket extends LinearOpMode {
         );
         pivot = new Pivot(
                 hardwareMap.get(DcMotorEx.class, "PIVOTLEFT"),
-                hardwareMap.get(DcMotorEx.class, "PIVOTRIGHT")
+                hardwareMap.get(DcMotorEx.class, "PIVOTRIGHT"),
+                650
         );
         intake = new Intake(hardwareMap);
         robotController = new MecanumRobotController(backLeft, backRight, frontLeft, frontRight, gyro, photoSensor,this);
