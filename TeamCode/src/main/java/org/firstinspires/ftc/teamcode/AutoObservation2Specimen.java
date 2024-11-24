@@ -28,6 +28,7 @@ public class AutoObservation2Specimen extends LinearOpMode {
         waitForStart();
         intake.close();
 
+        // place first specimen
         pivot.setTargetPosition(-1277);
         viperSlide.setTargetPosition(417);
         intake.hingeToDegree(99);
@@ -38,6 +39,8 @@ public class AutoObservation2Specimen extends LinearOpMode {
         robotController.sleep(0.1);
         intake.largeOpen();
         robotController.sleep(0.1);
+
+        // push 2 samples into observation zone
         robotController.distanceDrive(9.0, 180.0, DRIVE_SPEED);
         robotController.distanceDrive(30.0, 90.0, DRIVE_SPEED);
         robotController.distanceDrive(33.0, -0.0, DRIVE_SPEED);
@@ -46,14 +49,39 @@ public class AutoObservation2Specimen extends LinearOpMode {
         robotController.distanceDrive(47.0, -0.0, DRIVE_SPEED);
         robotController.distanceDrive(12.0, 90.0, DRIVE_SPEED);
         robotController.distanceDrive(47.0, 180.0, DRIVE_SPEED);
+
+        // prep for picking up second specimen
         robotController.distanceDrive(22.7386, 14.0362, DRIVE_SPEED);
         robotController.turnTo(180.0, TURN_SPEED);
+
+        // pick up the second specimen
+        intake.setWristDegree(0);
+        intake.largeOpen();
+        pivot.setTargetPosition(207);
+        intake.hingeToDegree(157);
+        viperSlide.setTargetPosition(292);
+        robotController.sleep(0.1);
         robotController.distanceDrive(21.0, 180.0, DRIVE_SPEED);
-        robotController.sleep(1.0);
+        intake.close();
+        robotController.sleep(0.1);
+
+        // drive to submersible for second specimen placing
         robotController.distanceDrive(63.4105, -74.7449, DRIVE_SPEED);
+        pivot.setTargetPosition(-1277);
+        viperSlide.setTargetPosition(417);
+        intake.hingeToDegree(99);
+        intake.setWristDegree(-81);
         robotController.turnTo(0.0, TURN_SPEED);
         robotController.distanceDrive(8.0, -0.0, DRIVE_SPEED);
-        robotController.sleep(1.0);
+
+        // place second specimen
+        viperSlide.setTargetPosition(ViperSlide.MIN_POSITION);
+        robotController.distanceDrive(3.0, 180.0, DRIVE_SPEED);
+        robotController.sleep(0.1);
+        intake.largeOpen();
+        robotController.sleep(0.1);
+
+        // park
         robotController.distanceDrive(55.2495, 124.5085, DRIVE_SPEED);
         robotController.sleep(10.0);
     }

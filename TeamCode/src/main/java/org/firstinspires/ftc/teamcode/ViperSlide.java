@@ -154,6 +154,10 @@ public class ViperSlide {
         return (leftMotor.getCurrentPosition() + rightMotor.getCurrentPosition()) / 2;
     }
 
+    public double getCurrentPositionInches() {
+        return (double) getCurrentPosition() / MOVE_COUNTS_PER_INCH;
+    }
+
     public boolean isAtBottom() {
         return getCurrentPosition() <= MIN_POSITION;
     }
