@@ -169,8 +169,6 @@ public class MecanumRobotController {
         // stopping, and if it gets hit by something super fast, it doesn't try to correct its
         // heading back into that object.
         if ((robot == null && currentAngularVelocity > MIN_VELOCITY_TO_SMOOTH_TURN) || turn != 0 || runtime.seconds() - turnStoppedTime < TURN_DRIFT_TIME) {
-            robot.telemetry.addData("thing", runtime.seconds() - turnStoppedTime);
-            Log.d("TimeDiff", Double.toString(runtime.seconds() - turnStoppedTime));
             wantedHeading = currentHeading;
         } else {
             double error = normalize(wantedHeading - currentHeading);
@@ -235,13 +233,13 @@ public class MecanumRobotController {
     //                                or the field. If its field centric, the robot will always
     //                                move the same direction for the same inputted direction,
     //                                no matter what direction the robot is facing.
-    public void distanceDrive(double distance, double direction, double speed, boolean isFieldCentric)
+    public void distanceDrive(double distance, double direction, double speed, double holdHeading, boolean isFieldCentric)
             throws RuntimeException {
         if (robot == null) {
             throw new RuntimeException("Tried to run distanceDrive but LinearOpMode object not given!");
         }
         double currentHeading = getAngleImuDegrees();
-        double startingHeading = currentHeading;
+        double startingHeading = holdHeading;
         // This still needs testing.
         double forward;
         double strafe;
@@ -288,10 +286,14 @@ public class MecanumRobotController {
             robot.telemetry.addData("Current Action", "Distance Driving");
             robot.telemetry.addData("Distance To Target", distanceToDestination * moveCountMult);
             robot.telemetry.addData("", "");
+            double headingCorrectionPower = HEADING_CORRECTION_POWER;
+            if (speed < 2.0) {
+                headingCorrectionPower = 0;
+            }
             if (distanceToDestinationInches <= INCHES_LEFT_TO_SLOW_DOWN) {
-                move(0.01 + speed * Math.sin(distanceToDestinationInches / INCHES_LEFT_TO_SLOW_DOWN * (Math.PI / 2)), 0.0, 0.0, HEADING_CORRECTION_POWER);
+                move(0.01 + speed * Math.sin(distanceToDestinationInches / INCHES_LEFT_TO_SLOW_DOWN * (Math.PI / 2)), 0.0, 0.0, headingCorrectionPower);
             } else {
-                move(speed, 0.0, 0.0, HEADING_CORRECTION_POWER);
+                move(speed, 0.0, 0.0, headingCorrectionPower);
             }
 
             if (distanceToDestinationInches < 1) {
@@ -315,8 +317,12 @@ public class MecanumRobotController {
     //      - double direction: The direction, in degrees, that the robot will drive in. This is
     //                          based on the direction the robot was initialized in.
     //      - double speed: The speed at which the robot will move.
+    public void distanceDrive(double distance, double direction, double speed, double holdHeading) throws RuntimeException {
+        distanceDrive(distance, direction, speed, holdHeading, DEFAULT_FIELD_CENTRIC);
+    }
+
     public void distanceDrive(double distance, double direction, double speed) throws RuntimeException {
-        distanceDrive(distance, direction, speed, DEFAULT_FIELD_CENTRIC);
+        distanceDrive(distance, direction, speed, 0, DEFAULT_FIELD_CENTRIC);
     }
 
     // Behavior: Drives the robot to a given position on the field relative to the starting position.

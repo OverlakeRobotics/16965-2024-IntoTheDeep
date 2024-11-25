@@ -12,7 +12,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 @Config
 @Autonomous(name="Auto Basket", group="Robot")
 public class AutoBasket extends LinearOpMode {
-    public static final double DRIVE_SPEED = 2.7;
+    public static final double DRIVE_SPEED = 2;
     public static final double TURN_SPEED = 0.8;
     private MecanumRobotController robotController;
     private final ElapsedTime runtime = new ElapsedTime();
@@ -31,95 +31,116 @@ public class AutoBasket extends LinearOpMode {
         initialize();
         waitForStart();
 
-        // place the preloaded specimen
+        // place preloaded specimen
         pivot.setTargetPosition(-1277);
         viperSlide.setTargetPosition(417);
         intake.hingeToDegree(99);
-        robotController.distanceDrive(29.0, -0.0, DRIVE_SPEED);
+        robotController.distanceDrive(29.0, -0.0, DRIVE_SPEED, 0);
         robotController.sleep(0.5);
         viperSlide.setTargetPosition(ViperSlide.MIN_POSITION);
-        robotController.distanceDrive(3.0, 180.0, DRIVE_SPEED);
+        robotController.distanceDrive(3.0, 180.0, DRIVE_SPEED, 0);
         robotController.sleep(0.1);
         intake.largeOpen();
         robotController.sleep(0.1);
 
-        // pick up first neutral sample
-        robotController.distanceDrive(5.0, 180.0, DRIVE_SPEED);
-        robotController.distanceDrive(39.0, -90.0, DRIVE_SPEED);
-        intake.setWristDegree(0);
-        intake.largeOpen();
-        pivot.setTargetPosition(207);
-        intake.hingeToDegree(157);
-        viperSlide.setTargetPosition(292);
-        robotController.sleep(0.2);
-        robotController.distanceDrive(3.0, -0.0, DRIVE_SPEED);
-        intake.close();
-        robotController.sleep(0.1);
-
-        // place first neutral sample in basket
-        robotController.distanceDrive(12.3693, -165.9638, DRIVE_SPEED);
-        pivot.setAngleDegrees(80);
-        viperSlide.setTargetPosition(ViperSlide.MAX_POSITION);
-        intake.hingeToDegree(80);
-        intake.setWristDegree(0);
-        robotController.turnTo(135.0, TURN_SPEED);
-        robotController.distanceDrive(12.7279, -135.0, DRIVE_SPEED);
-        intake.largeOpen();
-
-        // pick up second neutral sample
-        intake.hingeToDegree(157);
-        viperSlide.setTargetPosition(292);
-        robotController.sleep(1.0);
-        pivot.setTargetPosition(207);
-        robotController.distanceDrive(18.0, -0.0, DRIVE_SPEED);
-        robotController.turnTo(0.0, TURN_SPEED);
-        robotController.distanceDrive(3.0, -0.0, DRIVE_SPEED);
-        intake.close();
-        robotController.sleep(0.1);
-
-        // place second neutral sample in basket
-        robotController.distanceDrive(15.0, 143.1301, DRIVE_SPEED);
-        pivot.setAngleDegrees(80);
-        viperSlide.setTargetPosition(ViperSlide.MAX_POSITION);
-        intake.hingeToDegree(80);
-        intake.setWristDegree(0);
-        robotController.turnTo(135.0, TURN_SPEED);
-        robotController.distanceDrive(12.7279, -135.0, DRIVE_SPEED);
-        intake.largeOpen();
-
-        // pick up third neutral sample
-        intake.hingeToDegree(100);
-        robotController.sleep(0.1);
-        viperSlide.setTargetPosition(ViperSlide.MIN_POSITION);
-        intake.setWristDegree(-45);
-        robotController.sleep(1.0);
-        robotController.distanceDrive(27.1662, -6.3402, DRIVE_SPEED);
-        robotController.turnTo(45.0, TURN_SPEED);
-        intake.hingeToDegree(0);
-        pivot.setAngleDegrees(-10);
-        robotController.sleep(0.5);
-        intake.close();
-        pivot.setAngleDegrees(0);
-        robotController.sleep(0.1);
-
-        // place third neutral sample in basket
-        robotController.distanceDrive(21.6333, 146.3099, DRIVE_SPEED);
-        pivot.setAngleDegrees(80);
-        viperSlide.setTargetPosition(ViperSlide.MAX_POSITION);
-        intake.hingeToDegree(80);
-        intake.setWristDegree(0);
-        robotController.turnTo(135.0, TURN_SPEED);
-        robotController.distanceDrive(12.7279, -135.0, DRIVE_SPEED);
-        intake.largeOpen();
-
-        // park
-        intake.hingeToDegree(100);
-        robotController.sleep(0.1);
-        viperSlide.setTargetPosition(ViperSlide.MIN_POSITION);
-        robotController.distanceDrive(65.7951, 24.2277, DRIVE_SPEED);
-        pivot.setAngleDegrees(90);
-        robotController.turnTo(270.0, TURN_SPEED);
-        robotController.distanceDrive(9.0, 90.0, DRIVE_SPEED);
+        // get out of the way
+        robotController.distanceDrive(10.0, 180.0, DRIVE_SPEED, 0);
+        pivot.setAngleDegrees(100);
+        intake.hingeToDegree(90);
+        robotController.distanceDrive(15.0, -90.0, DRIVE_SPEED, 0);
+        robotController.sleep(20);
+//        // place the preloaded specimen
+//        pivot.setTargetPosition(-1277);
+//        viperSlide.setTargetPosition(417);
+//        intake.hingeToDegree(99);
+//        robotController.distanceDrive(29.0, -0.0, DRIVE_SPEED, 0);
+//        robotController.sleep(0.5);
+//        viperSlide.setTargetPosition(ViperSlide.MIN_POSITION);
+//        robotController.distanceDrive(3.0, 180.0, DRIVE_SPEED, 0);
+//        robotController.sleep(0.1);
+//        intake.largeOpen();
+//        robotController.sleep(0.1);
+//
+//        // pick up first neutral sample
+//        robotController.distanceDrive(5.0, 180.0, DRIVE_SPEED, 0);
+//        robotController.distanceDrive(39.0, -90.0, DRIVE_SPEED, 0);
+//
+//        intake.setWristDegree(0);
+//        intake.largeOpen();
+//        pivot.setTargetPosition(207);
+//        intake.hingeToDegree(157);
+//        viperSlide.setTargetPosition(242);
+//        robotController.sleep(0.2);
+//        robotController.distanceDrive(3.0, -0.0, DRIVE_SPEED, 0);
+//        intake.close();
+//        robotController.sleep(0.1);
+//
+//        // place first neutral sample in basket
+//        robotController.distanceDrive(12.3693, -165.9638, DRIVE_SPEED, 0);
+//        pivot.setAngleDegrees(80);
+//        viperSlide.setTargetPosition(ViperSlide.MAX_POSITION);
+//        intake.hingeToDegree(80);
+//        intake.setWristDegree(0);
+//        robotController.turnTo(135.0, TURN_SPEED);
+//        robotController.distanceDrive(12.7279, -135.0, DRIVE_SPEED, 135);
+//        intake.largeOpen();
+//
+//        // pick up second neutral sample
+//        intake.setWristDegree(0);
+//        intake.largeOpen();
+//        intake.hingeToDegree(157);
+//        viperSlide.setTargetPosition(242);
+//        robotController.sleep(1.0);
+//        pivot.setTargetPosition(207);
+//        robotController.distanceDrive(18.0, -0.0, DRIVE_SPEED, 135);
+//        robotController.turnTo(0.0, TURN_SPEED);
+//        robotController.distanceDrive(3.0, -0.0, DRIVE_SPEED, 0);
+//        intake.close();
+//        robotController.sleep(0.1);
+//
+//        // place second neutral sample in basket
+//        robotController.distanceDrive(15.0, 143.1301, DRIVE_SPEED, 0);
+//        pivot.setAngleDegrees(80);
+//        viperSlide.setTargetPosition(ViperSlide.MAX_POSITION);
+//        intake.hingeToDegree(80);
+//        intake.setWristDegree(0);
+//        robotController.turnTo(135.0, TURN_SPEED);
+//        robotController.distanceDrive(12.7279, -135.0, DRIVE_SPEED, 135);
+//        intake.largeOpen();
+//
+//        // pick up third neutral sample
+//        intake.hingeToDegree(100);
+//        robotController.sleep(0.1);
+//        viperSlide.setTargetPosition(ViperSlide.MIN_POSITION);
+//        intake.setWristDegree(-45);
+//        robotController.sleep(1.0);
+//        robotController.distanceDrive(27.1662, -6.3402, DRIVE_SPEED, 135);
+//        robotController.turnTo(45.0, TURN_SPEED);
+//        intake.hingeToDegree(0);
+//        pivot.setAngleDegrees(-10);
+//        robotController.sleep(0.5);
+//        intake.close();
+//        pivot.setAngleDegrees(0);
+//        robotController.sleep(0.1);
+//
+//        // place third neutral sample in basket
+//        robotController.distanceDrive(21.6333, 146.3099, DRIVE_SPEED, 45);
+//        pivot.setAngleDegrees(80);
+//        viperSlide.setTargetPosition(ViperSlide.MAX_POSITION);
+//        intake.hingeToDegree(80);
+//        intake.setWristDegree(0);
+//        robotController.turnTo(135.0, TURN_SPEED);
+//        robotController.distanceDrive(12.7279, -135.0, DRIVE_SPEED, 135);
+//        intake.largeOpen();
+//
+//        // park
+//        intake.hingeToDegree(100);
+//        robotController.sleep(0.1);
+//        viperSlide.setTargetPosition(ViperSlide.MIN_POSITION);
+//        robotController.distanceDrive(65.7951, 24.2277, DRIVE_SPEED, 135);
+//        pivot.setAngleDegrees(90);
+//        robotController.turnTo(270.0, TURN_SPEED);
+//        robotController.distanceDrive(9.0, 90.0, DRIVE_SPEED, 270);
     }
 
     public void initialize() {

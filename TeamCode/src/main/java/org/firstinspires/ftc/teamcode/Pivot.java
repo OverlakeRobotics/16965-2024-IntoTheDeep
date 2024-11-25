@@ -22,7 +22,7 @@ public class Pivot {
         STOPPED
     }
 
-    public Pivot(DcMotorEx leftMotor, DcMotorEx rightMotor, int offset) {
+    public Pivot(DcMotorEx leftMotor, DcMotorEx rightMotor, int offset, boolean doResetEncoders) {
         this.leftMotor = leftMotor;
         this.rightMotor = rightMotor;
         this.offset = offset;
@@ -30,7 +30,16 @@ public class Pivot {
         rightMotor.setDirection(DcMotor.Direction.REVERSE);
         leftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        resetEncoders();
+        if (doResetEncoders) {
+            resetEncoders();
+        } else {
+            leftMotor.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+            rightMotor.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        }
+    }
+
+    public Pivot(DcMotorEx leftMotor, DcMotorEx rightMotor, int offset) {
+        this(leftMotor, rightMotor, offset, true);
     }
 
     public Pivot(DcMotorEx leftMotor, DcMotorEx rightMotor) {

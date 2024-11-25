@@ -11,7 +11,7 @@ public class ViperSlide {
     public static final double DEFAULT_POWER = 0.65;
     public static final int POSITION_TOLERANCE = 10;
     public static final int MOVE_COUNTS_PER_INCH = 111;
-    public static final double BASE_ARM_LENGTH = 12;
+    public static final double BASE_ARM_LENGTH = 15;
     public static final double CHASSIS_TO_PIVOT_LENGTH = 9;
     public static final int MIN_POSITION = 20;
     public static final int MAX_POSITION = 3000;   // Adjust for your robot
@@ -32,14 +32,23 @@ public class ViperSlide {
         STOPPED
     }
 
-    public ViperSlide(DcMotorEx leftMotor, DcMotorEx rightMotor) {
+    public ViperSlide(DcMotorEx leftMotor, DcMotorEx rightMotor, boolean doResetEncoders) {
         this.leftMotor = leftMotor;
         this.rightMotor = rightMotor;
         leftMotor.setDirection(DcMotorSimple.Direction.FORWARD);  // Clockwise
         rightMotor.setDirection(DcMotorSimple.Direction.REVERSE); // Counter-clockwise
         leftMotor.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
         rightMotor.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
-        resetEncoders();
+        if (doResetEncoders) {
+            resetEncoders();
+        } else {
+            leftMotor.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+            rightMotor.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        }
+    }
+
+    public ViperSlide(DcMotorEx leftMotor, DcMotorEx rightMotor) {
+        this(leftMotor, rightMotor, true);
     }
 
     private void setState(SlideState newState, double velocity) {

@@ -32,26 +32,26 @@ public class AutoObservation2Specimen extends LinearOpMode {
         pivot.setTargetPosition(-1277);
         viperSlide.setTargetPosition(417);
         intake.hingeToDegree(99);
-        robotController.distanceDrive(29.0, -0.0, DRIVE_SPEED);
+        robotController.distanceDrive(29.0, -0.0, DRIVE_SPEED, 0);
         robotController.sleep(0.5);
         viperSlide.setTargetPosition(ViperSlide.MIN_POSITION);
-        robotController.distanceDrive(3.0, 180.0, DRIVE_SPEED);
+        robotController.distanceDrive(3.0, 180.0, DRIVE_SPEED, 0);
         robotController.sleep(0.1);
         intake.largeOpen();
         robotController.sleep(0.1);
 
         // push 2 samples into observation zone
-        robotController.distanceDrive(9.0, 180.0, DRIVE_SPEED);
-        robotController.distanceDrive(30.0, 90.0, DRIVE_SPEED);
-        robotController.distanceDrive(33.0, -0.0, DRIVE_SPEED);
-        robotController.distanceDrive(10.0, 90.0, DRIVE_SPEED);
-        robotController.distanceDrive(47.0, 180.0, DRIVE_SPEED);
-        robotController.distanceDrive(47.0, -0.0, DRIVE_SPEED);
-        robotController.distanceDrive(12.0, 90.0, DRIVE_SPEED);
-        robotController.distanceDrive(47.0, 180.0, DRIVE_SPEED);
+        robotController.distanceDrive(9.0, 180.0, DRIVE_SPEED, 0);
+        robotController.distanceDrive(28.0, 90.0, DRIVE_SPEED, 0);
+        robotController.distanceDrive(33.0, -0.0, DRIVE_SPEED, 0);
+        robotController.distanceDrive(10.0, 90.0, DRIVE_SPEED, 0);
+        robotController.distanceDrive(47.0, 180.0, DRIVE_SPEED, 0);
+//        robotController.distanceDrive(47.0, -0.0, DRIVE_SPEED, 0);
+//        robotController.distanceDrive(10.5, 90.0, DRIVE_SPEED, 0);
+//        robotController.distanceDrive(47.0, 180.0, DRIVE_SPEED, 0);
 
         // prep for picking up second specimen
-        robotController.distanceDrive(22.7386, 14.0362, DRIVE_SPEED);
+        robotController.distanceDrive(22.7386, 14.0362, DRIVE_SPEED, 0);
         robotController.turnTo(180.0, TURN_SPEED);
 
         // pick up the second specimen
@@ -59,30 +59,32 @@ public class AutoObservation2Specimen extends LinearOpMode {
         intake.largeOpen();
         pivot.setTargetPosition(207);
         intake.hingeToDegree(157);
-        viperSlide.setTargetPosition(292);
-        robotController.sleep(0.1);
-        robotController.distanceDrive(21.0, 180.0, DRIVE_SPEED);
+        viperSlide.setTargetPosition(242);
+        robotController.sleep(3.0);
+        robotController.distanceDrive(17.0, 180.0, DRIVE_SPEED - 2, 180);
         intake.close();
-        robotController.sleep(0.1);
+        robotController.sleep(0.5);
 
         // drive to submersible for second specimen placing
-        robotController.distanceDrive(63.4105, -74.7449, DRIVE_SPEED);
-        pivot.setTargetPosition(-1277);
-        viperSlide.setTargetPosition(417);
         intake.hingeToDegree(99);
         intake.setWristDegree(-81);
+        pivot.setTargetPosition(-1277);
+        robotController.distanceDrive(55.4105, -74.7449, DRIVE_SPEED, 180);
+        viperSlide.setTargetPosition(417);
         robotController.turnTo(0.0, TURN_SPEED);
-        robotController.distanceDrive(8.0, -0.0, DRIVE_SPEED);
+        robotController.distanceDrive(10.0, -0.0, DRIVE_SPEED, 0);
 
         // place second specimen
         viperSlide.setTargetPosition(ViperSlide.MIN_POSITION);
-        robotController.distanceDrive(3.0, 180.0, DRIVE_SPEED);
+        robotController.distanceDrive(3.0, 180.0, DRIVE_SPEED, 0);
         robotController.sleep(0.1);
         intake.largeOpen();
         robotController.sleep(0.1);
 
         // park
-        robotController.distanceDrive(55.2495, 124.5085, DRIVE_SPEED);
+        pivot.setAngleDegrees(100);
+        intake.hingeToDegree(90);
+        robotController.distanceDrive(55.2495, 124.5085, DRIVE_SPEED, 0);
         robotController.sleep(10.0);
     }
 
