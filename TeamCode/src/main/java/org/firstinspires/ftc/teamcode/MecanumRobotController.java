@@ -31,11 +31,11 @@ public class MecanumRobotController {
     public static final boolean DEFAULT_SEND_TELEMETRY = true;
     public static final double FORWARD_COUNTS_PER_INCH = 43.80;
     public static final double STRAFE_COUNTS_PER_INCH = 50.58;
-    public static final double HEADING_CORRECTION_POWER = 2.0;
-    public static final double MAX_CORRECTION_ERROR = 2.0;
+    public static final double DEFAULT_HEADING_CORRECTION_POWER = 2.0;
+    public static final double MAX_CORRECTION_ERROR = 1.0;
     public static final double TURN_SPEED_RAMP = 4.0;
     public static final double MIN_VELOCITY_TO_SMOOTH_TURN = 115;
-    public static final double INCHES_LEFT_TO_SLOW_DOWN = 3;
+    public static final double INCHES_LEFT_TO_SLOW_DOWN = 8;
     public static final double INCHES_LEFT_TO_SPEED_UP = 5;
     public static final double TURN_DRIFT_TIME = 0;
     public static final double MIN_DIST_TO_STOP = 0.1;
@@ -238,6 +238,7 @@ public class MecanumRobotController {
         if (robot == null) {
             throw new RuntimeException("Tried to run distanceDrive but LinearOpMode object not given!");
         }
+        holdHeading = normalize(holdHeading);
         double currentHeading = getAngleImuDegrees();
         double startingHeading = holdHeading;
         // This still needs testing.
@@ -275,7 +276,7 @@ public class MecanumRobotController {
 
         while ((backLeft.isBusy() || backRight.isBusy() || frontLeft.isBusy() || frontRight.isBusy())
                 && robot.opModeIsActive()) {
-            wantedHeading = currentHeading;
+            wantedHeading = holdHeading;
             double distanceToDestination = (Math.abs(backLeftTarget - backLeft.getCurrentPosition()) +
                     Math.abs(backRightTarget - backRight.getCurrentPosition()) +
                     Math.abs(frontLeftTarget - frontLeft.getCurrentPosition()) +
@@ -286,7 +287,7 @@ public class MecanumRobotController {
             robot.telemetry.addData("Current Action", "Distance Driving");
             robot.telemetry.addData("Distance To Target", distanceToDestination * moveCountMult);
             robot.telemetry.addData("", "");
-            double headingCorrectionPower = HEADING_CORRECTION_POWER;
+            double headingCorrectionPower = 0.9 * speed;
             if (speed < 2.0) {
                 headingCorrectionPower = 0;
             }
@@ -348,7 +349,7 @@ public class MecanumRobotController {
             robot.telemetry.addData("dx", dx);
             robot.telemetry.addData("dy", dy);
             robot.telemetry.addData("Move direction", moveDirection);
-            move(forward, 0.0, 0.0, HEADING_CORRECTION_POWER);
+            move(forward, 0.0, 0.0, DEFAULT_HEADING_CORRECTION_POWER);
 //            distance = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
             distance = dy;
         }
@@ -432,9 +433,9 @@ public class MecanumRobotController {
             double currentTime = runtime.seconds();
             double deltaTime = currentTime - lastTime;
             if ((int)currentTime % 2 == 0) {
-                move(0, 0, 0.5, HEADING_CORRECTION_POWER);
+                move(0, 0, 0.5, DEFAULT_HEADING_CORRECTION_POWER);
             } else {
-                move(0, 0, 0, HEADING_CORRECTION_POWER);
+                move(0, 0, 0, DEFAULT_HEADING_CORRECTION_POWER);
                 totalError += deltaTime * currentAngularVelocity;
             }
             lastTime = currentTime;
@@ -456,12 +457,12 @@ public class MecanumRobotController {
     //      - double degrees: The angle to turn the robot to in degrees.
     //      - double speed: The speed at which the robot should turn.
     public void turnTo(double angle, double speed) {
-        wantedHeading = angle;
-        while (Math.abs(getAngleImuDegrees() - wantedHeading) > MAX_CORRECTION_ERROR && robot.opModeIsActive()) {
+        wantedHeading = normalize(angle);
+        while (Math.abs(normalize(getAngleImuDegrees() - wantedHeading)) > MAX_CORRECTION_ERROR && robot.opModeIsActive()) {
             robot.telemetry.addData("Current Action", "Turning To Angle");
             robot.telemetry.addData("Degrees to destination", wantedHeading - getAngleImuDegrees());
             robot.telemetry.addData("", "");
-            wantedHeading = angle;
+            wantedHeading = normalize(angle);
             robot.telemetry.addData("Wanted Angle Turn To", angle);
             move(0, 0, 0, speed);
         }
