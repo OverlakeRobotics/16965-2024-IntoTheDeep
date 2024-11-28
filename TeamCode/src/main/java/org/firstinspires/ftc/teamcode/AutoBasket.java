@@ -9,6 +9,17 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+
+import java.util.Arrays;
+import java.util.List;
+
+
+import java.util.List;
+
 @Config
 @Autonomous(name="Auto Basket", group="Robot")
 public class AutoBasket extends LinearOpMode {
@@ -65,6 +76,7 @@ public class AutoBasket extends LinearOpMode {
         // pick up first neutral sample
         robotController.distanceDrive(12.0, 180.0, DRIVE_SPEED, 0);
         robotController.distanceDrive(38.5, -90.0, DRIVE_SPEED, 0);
+        //robotController.runToPosition(-17.0, -40.0, 0);
 
         intake.setWristDegree(0);
         intake.largeOpen();
@@ -165,7 +177,7 @@ public class AutoBasket extends LinearOpMode {
 //        claw.setDirection(Servo.Direction.REVERSE);
 //        wrist = hardwareMap.get(Servo.class, "CLAWRIGHT");
 
-        AutonomousNavigator navigator = new AutonomousNavigator(this, telemetry, 0, 0, 0);
+        //AutonomousNavigator navigator = new AutonomousNavigator(this, telemetry, 0, 0, 0);
         IMU gyro = hardwareMap.get(IMU.class, "imu2");
 
         SparkFunOTOS photoSensor = hardwareMap.get(SparkFunOTOS.class, "PHOTOSENSOR");
@@ -180,7 +192,22 @@ public class AutoBasket extends LinearOpMode {
                 650
         );
         intake = new Intake(hardwareMap);
-        robotController = new MecanumRobotController(backLeft, backRight, frontLeft, frontRight, gyro, photoSensor,this);
+
+        List<String> cameraNames = Arrays.asList("Webcam 1");
+
+        Position cameraPosition1 = new Position(
+                DistanceUnit.INCH, -8.75, -0.75, 0, 0
+        );
+
+        List<Position> cameraPositions = Arrays.asList(cameraPosition1);
+
+        YawPitchRollAngles cameraOrientation1 = new YawPitchRollAngles(
+                AngleUnit.DEGREES, 90, -90, 0, 0
+        );
+
+        List<YawPitchRollAngles> cameraOrientations = Arrays.asList(cameraOrientation1);
+
+        robotController = new MecanumRobotController(backLeft, backRight, frontLeft, frontRight, gyro, photoSensor, cameraNames, cameraPositions, cameraOrientations, this);
 
         telemetry.addData("Status", "Initialized");
     }

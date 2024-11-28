@@ -24,6 +24,10 @@ import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+
+import java.util.List;
 
 @Config
 public class MecanumRobotController {
@@ -55,6 +59,7 @@ public class MecanumRobotController {
     private final ElapsedTime runtime;
     private final ElapsedTime PIDTimer;
     private final ElapsedTime angularVelocityTimer;
+    private final AprilTagLocalization aprilTagLocalizer;
 
     private double wantedHeading;
     private double currentForward;
@@ -74,7 +79,10 @@ public class MecanumRobotController {
     // servo, or sensor is added, put that in here so the class can access it.
     public MecanumRobotController(DcMotorEx backLeft, DcMotorEx backRight,
                                   DcMotorEx frontLeft, DcMotorEx frontRight,
-                                  IMU gyro, SparkFunOTOS photoSensor, LinearOpMode robot) {
+                                  IMU gyro, SparkFunOTOS photoSensor,
+                                  List<String> cameraNames, List<Position> cameraPositions,
+                                  List<YawPitchRollAngles> cameraOrientations,
+                                  LinearOpMode robot) {
 
         backLeft.setDirection(DcMotorEx.Direction.FORWARD);
         backRight.setDirection(DcMotorEx.Direction.REVERSE);
@@ -121,6 +129,25 @@ public class MecanumRobotController {
 
         this.angularVelocityTimer = new ElapsedTime();
         this.angularVelocityTimer.reset();
+
+        this.aprilTagLocalizer = new AprilTagLocalization(
+                robot.hardwareMap,
+                cameraNames,
+                cameraPositions,
+                cameraOrientations
+        );
+
+        backLeft.setDirection(DcMotorEx.Direction.FORWARD);
+        backRight.setDirection(DcMotorEx.Direction.REVERSE);
+        frontLeft.setDirection(DcMotorEx.Direction.FORWARD);
+        frontRight.setDirection(DcMotorEx.Direction.REVERSE);
+
+        backLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        backRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        frontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        frontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        gyro.resetYaw();
     }
 
     // Overloaded constructor to create the robot controller without a LinearOpMode.
@@ -128,7 +155,12 @@ public class MecanumRobotController {
     public MecanumRobotController(DcMotorEx backLeft, DcMotorEx backRight,
                                   DcMotorEx frontLeft, DcMotorEx frontRight,
                                   IMU gyro, SparkFunOTOS photoSensor) {
-        this(backLeft, backRight, frontLeft, frontRight, gyro, photoSensor, null);
+        this(backLeft, backRight, frontLeft, frontRight, gyro, photoSensor, null, null, null, null);
+    }
+    public MecanumRobotController(DcMotorEx backLeft, DcMotorEx backRight,
+                                  DcMotorEx frontLeft, DcMotorEx frontRight,
+                                  IMU gyro, SparkFunOTOS photoSensor, LinearOpMode robot) {
+        this(backLeft, backRight, frontLeft, frontRight, gyro, photoSensor, null, null, null, robot);
     }
 
     // TODO: Tune PID values + other constants like TURN_DRIFT_TIME.
@@ -358,6 +390,122 @@ public class MecanumRobotController {
 //        currentPosition = getPosition();
 //        photoSensor.setPosition(new SparkFunOTOS.Pose2D(currentPosition.x * positionMultiplier, currentPosition.y * positionMultiplier, currentPosition.h));
     }
+    public void runToPosition(double targetX, double targetY, double targetHeading,
+                              Double startX, Double startY, Double startHeading) {
+        if (robot == null || aprilTagLocalizer == null) {
+            throw new RuntimeException("Tried to run runToPosition but no AprilTag!");
+        }
+
+        // Initialize current position
+        double currentX;
+        double currentY;
+        double currentHeading;
+
+        // Try updating robot position 5 times
+        for(int i = 0; i < 5; i++) {
+            aprilTagLocalizer.updateRobotPosition();
+            if(!Double.isNaN(aprilTagLocalizer.getRobotX())) {
+                break;
+            }
+        }
+
+        // If no AprilTags are visible and start positions are provided, use those
+        if (Double.isNaN(aprilTagLocalizer.getRobotX()) && startX != null &&
+                startY != null && startHeading != null) {
+            currentX = startX;
+            currentY = startY;
+            currentHeading = startHeading;
+        } else if (Double.isNaN(aprilTagLocalizer.getRobotX()) &&
+                (startX == null || startY == null || startHeading == null)) {
+            throw new RuntimeException("No AprilTags visible and no start position provided!");
+        } else {
+            currentX = aprilTagLocalizer.getRobotX();
+            currentY = aprilTagLocalizer.getRobotY();
+            currentHeading = aprilTagLocalizer.getRobotYaw();
+        }
+
+        while (robot.opModeIsActive()) {
+            // Calculate distance and angle to target
+            double dx = targetX - currentX;
+            double dy = targetY - currentY;
+            double distance = Math.sqrt(dx * dx + dy * dy);
+            double angleToTarget = Math.toDegrees(Math.atan2(dy, dx));
+            double headingError = normalize(targetHeading - currentHeading);
+
+            // If we're close enough to target position, just turn to final heading and exit
+            if (distance < MIN_DIST_TO_STOP) {
+                turnTo(targetHeading, DEFAULT_HEADING_CORRECTION_POWER);
+                break;
+            }
+
+            // Set motor targets for movement
+            setMotorTargetPositions(distance, angleToTarget, headingError);
+
+            // Wait for motors to finish
+            while(robot.opModeIsActive() && (backLeft.isBusy() || backRight.isBusy() ||
+                    frontLeft.isBusy() || frontRight.isBusy())) {
+                robot.telemetry.addData("Status", "Moving to position");
+                robot.telemetry.update();
+            }
+
+            // Update position after movement
+            aprilTagLocalizer.updateRobotPosition();
+
+            // Update current position - use last known position if no AprilTags visible
+            if (!Double.isNaN(aprilTagLocalizer.getRobotX())) {
+                currentX = aprilTagLocalizer.getRobotX();
+                currentY = aprilTagLocalizer.getRobotY();
+                currentHeading = aprilTagLocalizer.getRobotYaw();
+            }
+
+            // Send telemetry
+            robot.telemetry.addData("Current X", currentX);
+            robot.telemetry.addData("Current Y", currentY);
+            robot.telemetry.addData("Current Heading", currentHeading);
+            robot.telemetry.addData("Target X", targetX);
+            robot.telemetry.addData("Target Y", targetY);
+            robot.telemetry.addData("Target Heading", targetHeading);
+            robot.telemetry.addData("Distance to Target", distance);
+            robot.telemetry.addData("AprilTags Visible", !Double.isNaN(aprilTagLocalizer.getRobotX()));
+            robot.telemetry.update();
+        }
+
+        // Stop the robot and reset motor modes
+        backLeft.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        backRight.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        frontLeft.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        frontRight.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        move(0, 0, 0, 0);
+    }
+
+    // Overloaded method without start positions
+    public void runToPosition(double targetX, double targetY, double targetHeading) {
+        runToPosition(targetX, targetY, targetHeading, null, null, null);
+    }
+
+    public void setMotorTargetPositions(double distance, double angle, double turn) {
+        // Calculate forward and strafe distances
+        double forward = distance * Math.cos(Math.toRadians(angle));
+        double strafe = distance * Math.sin(Math.toRadians(angle));
+
+        // Convert forward/strafe distances to encoder counts
+        int forwardCounts = (int)(forward * FORWARD_COUNTS_PER_INCH);
+        int strafeCounts = (int)(strafe * STRAFE_COUNTS_PER_INCH);
+        int turnCounts = (int)(turn * FORWARD_COUNTS_PER_INCH);
+
+        // Calculate target position for each motor
+        backLeft.setTargetPosition(backLeft.getCurrentPosition() - (forwardCounts + strafeCounts - turnCounts));
+        backRight.setTargetPosition(backRight.getCurrentPosition() - (forwardCounts - strafeCounts + turnCounts));
+        frontLeft.setTargetPosition(frontLeft.getCurrentPosition() - (forwardCounts - strafeCounts - turnCounts));
+        frontRight.setTargetPosition(frontRight.getCurrentPosition() - (forwardCounts + strafeCounts + turnCounts));
+
+        // Set motors to RUN_TO_POSITION mode and set power
+        for (DcMotorEx motor : new DcMotorEx[]{backLeft, backRight, frontLeft, frontRight}) {
+            motor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+            motor.setPower(0.5);
+        }
+    }
+
 
     // Behavior: Drives the robot continuously based on forward, strafe, and turn power.
     // Params:
