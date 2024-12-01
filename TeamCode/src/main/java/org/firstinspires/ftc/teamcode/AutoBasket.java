@@ -165,7 +165,7 @@ public class AutoBasket extends LinearOpMode {
 //        claw.setDirection(Servo.Direction.REVERSE);
 //        wrist = hardwareMap.get(Servo.class, "CLAWRIGHT");
 
-        AutonomousNavigator navigator = new AutonomousNavigator(this, telemetry, 0, 0, 0);
+//        AutonomousNavigator navigator = new AutonomousNavigator(this, telemetry, 0, 0, 0);
         IMU gyro = hardwareMap.get(IMU.class, "imu2");
 
         SparkFunOTOS photoSensor = hardwareMap.get(SparkFunOTOS.class, "PHOTOSENSOR");
