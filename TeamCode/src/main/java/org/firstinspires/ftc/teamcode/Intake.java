@@ -11,11 +11,11 @@ public class Intake {
     private final Servo hingeLeft;
     private final Servo hingeRight;
     private final Servo wrist;
-//    private final Servo whacker;
+    //    private final Servo whacker;
     private boolean isOpen;
 //    private boolean whacked;
 
-//    public static final double LEFT_CLOSED_POSITION = 0.03488;
+    //    public static final double LEFT_CLOSED_POSITION = 0.03488;
 //    public static final double RIGHT_CLOSED_POSITION = 0.7914;
     public static double LARGE_OPEN_POSITION = 0;
     public static double NORMAL_OPEN_POSITION = 0.1;
@@ -36,11 +36,11 @@ public class Intake {
 
 //        whacker = hardwareMap.get(Servo.class, "WHACKER");
 
-         clawLeft.setDirection(Servo.Direction.REVERSE);
-         clawRight.setDirection(Servo.Direction.FORWARD);
-         hingeLeft.setDirection(Servo.Direction.FORWARD);
-         hingeRight.setDirection(Servo.Direction.REVERSE);
-         wrist.setDirection(Servo.Direction.FORWARD);
+        clawLeft.setDirection(Servo.Direction.REVERSE);
+        clawRight.setDirection(Servo.Direction.FORWARD);
+        hingeLeft.setDirection(Servo.Direction.FORWARD);
+        hingeRight.setDirection(Servo.Direction.REVERSE);
+        wrist.setDirection(Servo.Direction.FORWARD);
 //         whacker.setDirection(Servo.Direction.REVERSE);
 
 //        clawLeft.scaleRange(LEFT_CLOSED_POSITION, LEFT_CLOSED_POSITION + MOVING_DISTANCE);

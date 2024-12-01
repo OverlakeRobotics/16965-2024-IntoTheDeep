@@ -1,9 +1,12 @@
 package org.firstinspires.ftc.teamcode;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
@@ -12,139 +15,131 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 public class AprilTagLocalization {
 
-    // Vision variables
-    private VisionPortal visionPortal;
-    private AprilTagProcessor aprilTagProcessor;
-
-    // Mapping of Tag IDs to their field positions (x, y, yaw) in feet and degrees
-    private final HashMap<Integer, double[]> tagPositions = new HashMap<>();
+    // List of VisionPortals and AprilTagProcessors for each camera
+    private List<VisionPortal> visionPortals = new ArrayList<>();
+    private List<AprilTagProcessor> aprilTagProcessors = new ArrayList<>();
 
     // Robot's calculated position
     private double robotX = Double.NaN;      // in feet
     private double robotY = Double.NaN;      // in feet
     private double robotYaw = Double.NaN;    // in degrees
 
-    // Conversion factor from inches to feet
-    private static final double INCHES_TO_FEET = 1.0 / 12.0;
-    // Camera offsets relative to the robot's center (in inches)
-    private static final double CAMERA_OFFSET_X_INCHES = 4.0; // Positive forward
-    private static final double CAMERA_OFFSET_Y_INCHES = 2.0; // Positive left
-    private static final double CAMERA_HEADING_OFFSET_DEGREES = 15.0; // Positive CCW rotation
+    // Camera positions and orientations on the robot
+    // Assume each camera may have different positions and orientations
+    private List<Position> cameraPositions = new ArrayList<>();
+    private List<YawPitchRollAngles> cameraOrientations = new ArrayList<>();
+
+    // Hardware Map
+    private HardwareMap hardwareMap;
+
+    // List of camera names as configured in the hardware map
+    private List<String> cameraNames;
 
     // Constructor
-    public AprilTagLocalization(HardwareMap hardwareMap) {
-        // Initialize AprilTag detection
-        initAprilTag(hardwareMap);
-
-        // Initialize tag positions
-        initTagPositions();
+    public AprilTagLocalization(HardwareMap hardwareMap, List<String> cameraNames,
+                                List<Position> cameraPositions, List<YawPitchRollAngles> cameraOrientations) {
+        this.hardwareMap = hardwareMap;
+        this.cameraNames = cameraNames;
+        this.cameraPositions = cameraPositions;
+        this.cameraOrientations = cameraOrientations;
+        // Initialize AprilTag detection for each camera
+        initAprilTag();
     }
 
-    // Initialize the AprilTag processor and vision portal
-    private void initAprilTag(HardwareMap hardwareMap) {
-        // Create the AprilTag processor
-        aprilTagProcessor = new AprilTagProcessor.Builder().build();
+    // Initialize the AprilTag processors and vision portals for each camera
+    private void initAprilTag() {
+        for (int i = 0; i < cameraNames.size(); i++) {
+            String cameraName = cameraNames.get(i);
+            Position camPosition = cameraPositions.get(i);
+            YawPitchRollAngles camOrientation = cameraOrientations.get(i);
 
-        // Create the vision portal using a webcam
-        visionPortal = new VisionPortal.Builder()
-                .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
-                .addProcessor(aprilTagProcessor)
-                .build();
+            // Create the AprilTag processor for this camera
+            AprilTagProcessor aprilTagProcessor = new AprilTagProcessor.Builder()
+                    .setDrawAxes(true)
+                    .setDrawCubeProjection(false)
+                    .setDrawTagOutline(true)
+                    .setCameraPose(camPosition, camOrientation)
+                    .build();
+
+            // Create the vision portal using the camera
+            VisionPortal visionPortal = new VisionPortal.Builder()
+                    .setCamera(hardwareMap.get(WebcamName.class, cameraName))
+                    .addProcessor(aprilTagProcessor)
+                    .build();
+
+            // Add to lists
+            aprilTagProcessors.add(aprilTagProcessor);
+            visionPortals.add(visionPortal);
+        }
     }
 
-    // Initialize the known positions of the AprilTags
-    private void initTagPositions() {
-        // Each entry: {x, y, tagYaw}
-        tagPositions.put(11, new double[]{2.0, 0.0, 180.0});
-        tagPositions.put(12, new double[]{0.0, 6.0, 90.0});
-        tagPositions.put(13, new double[]{2.0, 12.0, 0.0});
-        tagPositions.put(14, new double[]{10.0, 12.0, 0.0});
-        tagPositions.put(15, new double[]{12.0, 6.0, -90.0});
-        tagPositions.put(16, new double[]{10.0, 0.0, 180.0});
-    }
-
-    // Process AprilTag detections and update robot's position
+    // Process AprilTag detections from all cameras and update robot's position
     public void updateRobotPosition() {
-        // Get current detections
-        List<AprilTagDetection> detections = aprilTagProcessor.getDetections();
+        // Lists to store robot positions and orientations from each detection
+        List<Double> xPositions = new ArrayList<>();
+        List<Double> yPositions = new ArrayList<>();
+        List<Double> yaws = new ArrayList<>();
 
-        // Reset robot's position if no tags are detected
-        if (detections.size() == 0) {
+        // Iterate over each AprilTagProcessor to collect detections
+        for (AprilTagProcessor aprilTagProcessor : aprilTagProcessors) {
+            List<AprilTagDetection> detections = aprilTagProcessor.getDetections();
+
+            // Process detections that have a valid robotPose
+            for (AprilTagDetection detection : detections) {
+                if (detection.robotPose != null) {
+                    // Get robot's position from robotPose
+                    double xInches = detection.robotPose.getPosition().x;
+                    double yInches = detection.robotPose.getPosition().y;
+                    double yawDegrees = detection.robotPose.getOrientation().getYaw(AngleUnit.DEGREES);
+
+                    // Convert inches to feet
+                    double xFeet = xInches / 12.0;
+                    double yFeet = yInches / 12.0;
+
+                    // Add to lists
+                    xPositions.add(xFeet);
+                    yPositions.add(yFeet);
+                    yaws.add(yawDegrees);
+                }
+            }
+        }
+
+        // If we have collected positions, compute the averages
+        if (!xPositions.isEmpty()) {
+            robotX = average(xPositions);
+            robotY = average(yPositions);
+            robotYaw = averageAngles(yaws);
+        } else {
+            // No valid detections from any camera
             robotX = Double.NaN;
             robotY = Double.NaN;
             robotYaw = Double.NaN;
-            return;
-        }
-
-        // Process each detection
-        for (AprilTagDetection detection : detections) {
-            int tagID = detection.id;
-
-            // Check if the detected tag is in our known list
-            if (tagPositions.containsKey(tagID)) {
-                double[] tagData = tagPositions.get(tagID);
-                double tagX = tagData[0];
-                double tagY = tagData[1];
-                double tagYaw = tagData[2];
-
-                // Get the robot's relative position to the tag (in inches)
-                double robotXOffsetInches = detection.ftcPose.x; // in inches
-                double robotYOffsetInches = detection.ftcPose.y; // in inches
-                double robotYawOffset = detection.ftcPose.yaw;   // in degrees
-
-                // Convert offsets from inches to feet
-                double robotXOffset = robotXOffsetInches * INCHES_TO_FEET;
-                double robotYOffset = robotYOffsetInches * INCHES_TO_FEET;
-
-                // Adjust offsets based on the tag's orientation
-                double tagYawRadians = Math.toRadians(tagYaw);
-                double cosTheta = Math.cos(tagYawRadians);
-                double sinTheta = Math.sin(tagYawRadians);
-
-                double adjustedXOffset = robotXOffset * cosTheta - robotYOffset * sinTheta;
-                double adjustedYOffset = robotXOffset * sinTheta + robotYOffset * cosTheta;
-
-                // Calculate the camera's absolute position in the field coordinate frame
-                double cameraX = tagX + adjustedXOffset;
-                double cameraY = tagY + adjustedYOffset;
-                double cameraYaw = tagYaw + robotYawOffset;
-
-                // Now adjust for the camera's offset relative to the robot
-                // Convert camera offsets from inches to feet
-                double cameraOffsetX = CAMERA_OFFSET_X_INCHES * INCHES_TO_FEET;
-                double cameraOffsetY = CAMERA_OFFSET_Y_INCHES * INCHES_TO_FEET;
-                double cameraHeadingOffset = CAMERA_HEADING_OFFSET_DEGREES;
-
-                // The robot's heading is the camera's heading minus the camera's heading offset
-                robotYaw = normalizeAngle(cameraYaw - cameraHeadingOffset);
-
-                // Convert robotYaw to radians for calculations
-                double robotYawRadians = Math.toRadians(robotYaw);
-
-                // Transform the camera offset from the robot's coordinate frame to the field coordinate frame
-                double offsetXField = cameraOffsetX * Math.cos(robotYawRadians) - cameraOffsetY * Math.sin(robotYawRadians);
-                double offsetYField = cameraOffsetX * Math.sin(robotYawRadians) + cameraOffsetY * Math.cos(robotYawRadians);
-
-                // The robot's position is the camera's position minus the transformed offsets
-                robotX = cameraX - offsetXField;
-                robotY = cameraY - offsetYField;
-
-                // Since we've found a valid tag, we can break out of the loop
-                break;
-            }
         }
     }
 
-    private double normalizeAngle(double angle) {
-        angle = angle % 360;
-        if (angle > 180) {
-            angle -= 360;
-        } else if (angle < -180) {
-            angle += 360;
+    // Helper method to compute the average of a list of doubles
+    private double average(List<Double> values) {
+        double sum = 0.0;
+        for (Double val : values) {
+            sum += val;
         }
-        return angle;
+        return sum / values.size();
     }
 
+    // Helper method to compute the average of a list of angles in degrees
+    private double averageAngles(List<Double> angles) {
+        // Convert angles to radians
+        double sumSin = 0.0;
+        double sumCos = 0.0;
+        for (Double angle : angles) {
+            double radians = Math.toRadians(angle);
+            sumSin += Math.sin(radians);
+            sumCos += Math.cos(radians);
+        }
+        // Compute average angle
+        double avgRadians = Math.atan2(sumSin / angles.size(), sumCos / angles.size());
+        return Math.toDegrees(avgRadians);
+    }
 
     // Getters for the robot's position
     public double getRobotX() {
@@ -159,10 +154,12 @@ public class AprilTagLocalization {
         return robotYaw;
     }
 
-    // Method to close vision portal when done
+    // Method to close vision portals when done
     public void close() {
-        if (visionPortal != null) {
-            visionPortal.close();
+        for (VisionPortal visionPortal : visionPortals) {
+            if (visionPortal != null) {
+                visionPortal.close();
+            }
         }
     }
 }
