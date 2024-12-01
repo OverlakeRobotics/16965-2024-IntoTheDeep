@@ -29,33 +29,20 @@
 
 package org.firstinspires.ftc.teamcode;
 
-import android.view.ViewOutlineProvider;
-
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
-import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.hardware.sparkfun.SparkFunOTOS;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
-import com.qualcomm.robotcore.hardware.ImuOrientationOnRobot;
-import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.robotcore.util.Range;
-
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Quaternion;
 
 @Config
 @TeleOp(name="Mecanum Driver", group="TeleOp")
 public class MecanumDriver extends OpMode {
-    private MecanumRobotController robotController;
+    private RobotController robotController;
     private final ElapsedTime runtime = new ElapsedTime();
     private int pivotPosition = 0;
     private int viperPosition = 0;
@@ -90,10 +77,13 @@ public class MecanumDriver extends OpMode {
     private boolean pivotStarted;
     private boolean isSpecimenReady = false;
     private boolean isPickupSubReady = false;
+    private boolean isHingeDownReady = false;
     private boolean lastRightBumper = false;
     private boolean lastXButton = false;
     private double placeSpecimenStartTime;
     private boolean placingSpecimen = false;
+    private double bMacroStartedTime;
+    private boolean bMacroActivated = false;
 
     @Override
     public void init() {
@@ -122,7 +112,7 @@ public class MecanumDriver extends OpMode {
                 false
         );
         intake = new Intake(hardwareMap);
-        robotController = new MecanumRobotController(backLeft, backRight, frontLeft, frontRight, gyro, photoSensor);
+        robotController = new RobotController(backLeft, backRight, frontLeft, frontRight, gyro, photoSensor);
 
         telemetry.addData("Status", "Initialized");
     }
@@ -237,6 +227,7 @@ public class MecanumDriver extends OpMode {
             viperSlide.setTargetPosition(292);
             isPickupSubReady = false;
             isSpecimenReady = false;
+            isHingeDownReady = false;
         }
 
         // Place Specimen Macro
@@ -257,6 +248,7 @@ public class MecanumDriver extends OpMode {
                 isSpecimenReady = false;
             }
             isPickupSubReady = false;
+            isHingeDownReady = false;
         }
 
         if (placingSpecimen && runtime.seconds() - placeSpecimenStartTime > 0.05 && runtime.seconds() - placeSpecimenStartTime < 0.25) {
@@ -268,18 +260,29 @@ public class MecanumDriver extends OpMode {
 
         // Reset Slides Macro
         if (gamepad2.b) {
-            viperSlide.setTargetPosition(ViperSlide.MIN_POSITION);
+            bMacroStartedTime = runtime.seconds();
+            bMacroActivated = true;
             hingeDegree = 90;
             isPickupSubReady = false;
+            isHingeDownReady = false;
             isSpecimenReady = false;
+        }
+
+        if (bMacroActivated && runtime.seconds() - bMacroStartedTime >= 0.25) {
+            viperSlide.setTargetPosition(ViperSlide.MIN_POSITION);
+            bMacroActivated = false;
         }
 
         // Pickup submersible
         if (gamepad2.x != lastXButton && gamepad2.x) {
-            if (!isPickupSubReady) {
+            if (!isPickupSubReady && !isHingeDownReady) {
                 viperSlide.setTargetPosition(ViperSlide.MIN_POSITION);
                 pivot.setAngleDegrees(5);
+                hingeDegree = 90;
+                isHingeDownReady = true;
+            } else if (isHingeDownReady) {
                 hingeDegree = 0;
+                isHingeDownReady = false;
                 isPickupSubReady = true;
             } else {
                 pivot.setAngleDegrees(-10);
@@ -290,21 +293,20 @@ public class MecanumDriver extends OpMode {
 
         // Place Basket Macro
         if (gamepad2.y) {
-            pivot.setAngleDegrees(80);
+            pivot.setAngleDegrees(100);
             viperSlide.setTargetPosition(ViperSlide.MAX_POSITION);
-            hingeDegree = 80;
+            hingeDegree = 187;
             intake.setWristDegree(0);
             isPickupSubReady = false;
+            isHingeDownReady = false;
             isSpecimenReady = false;
         }
 
         if (gamepad2.dpad_left) {
             intake.setWristDegree(intake.getWristPositionDegrees() + 10);
-            isPickupSubReady = false;
             isSpecimenReady = false;
         } else if (gamepad2.dpad_right) {
             intake.setWristDegree(intake.getWristPositionDegrees() - 10);
-            isPickupSubReady = false;
             isSpecimenReady = false;
         }
 

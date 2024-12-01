@@ -9,7 +9,6 @@
 //      P: Parameters, the list of parameters and explanations of them.
 
 package org.firstinspires.ftc.teamcode;
-import android.util.Log;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
@@ -26,7 +25,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 @Config
-public class MecanumRobotController {
+public class RobotController {
     public static final boolean DEFAULT_FIELD_CENTRIC = true;
     public static final boolean DEFAULT_SEND_TELEMETRY = true;
     public static final double FORWARD_COUNTS_PER_INCH = 43.80;
@@ -72,9 +71,9 @@ public class MecanumRobotController {
 
     // Create the controller with all the motors needed to control the robot. If another motor,
     // servo, or sensor is added, put that in here so the class can access it.
-    public MecanumRobotController(DcMotorEx backLeft, DcMotorEx backRight,
-                                  DcMotorEx frontLeft, DcMotorEx frontRight,
-                                  IMU gyro, SparkFunOTOS photoSensor, LinearOpMode robot) {
+    public RobotController(DcMotorEx backLeft, DcMotorEx backRight,
+                           DcMotorEx frontLeft, DcMotorEx frontRight,
+                           IMU gyro, SparkFunOTOS photoSensor, LinearOpMode robot) {
 
         backLeft.setDirection(DcMotorEx.Direction.FORWARD);
         backRight.setDirection(DcMotorEx.Direction.REVERSE);
@@ -125,9 +124,9 @@ public class MecanumRobotController {
 
     // Overloaded constructor to create the robot controller without a LinearOpMode.
     // You cannot use distanceDrive or turnTo without a LinearOpMode.
-    public MecanumRobotController(DcMotorEx backLeft, DcMotorEx backRight,
-                                  DcMotorEx frontLeft, DcMotorEx frontRight,
-                                  IMU gyro, SparkFunOTOS photoSensor) {
+    public RobotController(DcMotorEx backLeft, DcMotorEx backRight,
+                           DcMotorEx frontLeft, DcMotorEx frontRight,
+                           IMU gyro, SparkFunOTOS photoSensor) {
         this(backLeft, backRight, frontLeft, frontRight, gyro, photoSensor, null);
     }
 

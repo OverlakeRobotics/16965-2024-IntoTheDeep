@@ -14,7 +14,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 public class AutoBasket extends LinearOpMode {
     public static final double DRIVE_SPEED = 2.7 + 0.75;
     public static final double TURN_SPEED = 1.5;
-    private MecanumRobotController robotController;
+    private RobotController robotController;
     private final ElapsedTime runtime = new ElapsedTime();
     private final static double VIPER_POWER = 0.75;
     private final static double PIVOT_POWER = 0.35;
@@ -180,7 +180,7 @@ public class AutoBasket extends LinearOpMode {
                 650
         );
         intake = new Intake(hardwareMap);
-        robotController = new MecanumRobotController(backLeft, backRight, frontLeft, frontRight, gyro, photoSensor,this);
+        robotController = new RobotController(backLeft, backRight, frontLeft, frontRight, gyro, photoSensor,this);
 
         telemetry.addData("Status", "Initialized");
     }

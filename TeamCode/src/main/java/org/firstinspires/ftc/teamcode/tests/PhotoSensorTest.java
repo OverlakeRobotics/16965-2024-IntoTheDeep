@@ -8,7 +8,6 @@ package org.firstinspires.ftc.teamcode.tests;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
@@ -20,7 +19,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.teamcode.MecanumRobotController;
+import org.firstinspires.ftc.teamcode.RobotController;
 
 /*
  * This OpMode illustrates how to use the SparkFun Qwiic Optical Tracking Odometry Sensor (OTOS)
@@ -37,7 +36,7 @@ import org.firstinspires.ftc.teamcode.MecanumRobotController;
 public class PhotoSensorTest extends LinearOpMode {
     // Create an instance of the sensor
     SparkFunOTOS myOtos;
-    MecanumRobotController robotController;
+    RobotController robotController;
     ElapsedTime runtime;
     public static double sleepTime = 40;
     public static double moveSpeed = 0.5;

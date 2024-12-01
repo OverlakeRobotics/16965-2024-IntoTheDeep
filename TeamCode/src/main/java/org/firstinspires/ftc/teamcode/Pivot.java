@@ -1,9 +1,11 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
+@Config
 public class Pivot {
     private DcMotorEx leftMotor;
     private DcMotorEx rightMotor;
@@ -11,7 +13,7 @@ public class Pivot {
     private static final int POSITION_TOLERANCE = 10;
     public static final int MIN_POSITION = -1750;
     public static final int MAX_POSITION = 200;
-
+    public static final double TICKS_PER_DEGREE = 945 / 90d;
     private int targetPosition = 0;
     private int offset;
     private PivotState currentState = PivotState.STOPPED;
