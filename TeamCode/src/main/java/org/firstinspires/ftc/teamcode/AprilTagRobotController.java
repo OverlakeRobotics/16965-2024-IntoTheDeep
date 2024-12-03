@@ -305,7 +305,7 @@ public class AprilTagRobotController {
 
         // hPos += deltaHeading;
 
-        hPos = Math.toRadians(normalize(getAngleImuDegrees() + startH));
+        hPos = normalize(getAngleImuDegrees() + startH);
 //
 //        double sinH = Math.sin(hPos);
 //        double cosH = Math.cos(hPos);
