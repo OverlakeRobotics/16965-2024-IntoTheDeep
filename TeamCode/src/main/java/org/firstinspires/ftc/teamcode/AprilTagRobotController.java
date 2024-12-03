@@ -68,9 +68,9 @@ public class AprilTagRobotController {
     private final AprilTagProcessor aprilTag;
     private final VisionPortal visionPortal;
     private static final Position cameraPosition = new Position(DistanceUnit.INCH,
-            -8.75, -0.75, 0, 0);
+            7, 5.6, 7, 0);
     private static final YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,
-            90, -90, 0, 0);
+            90, -82, 14, 0);
 
     private double wantedHeading;
     private double currentForward;
@@ -86,15 +86,20 @@ public class AprilTagRobotController {
     private double xPos;
     private double yPos;
     private double hPos;
+    private double startH;
     private int kTuner;
+    private int lastBackLeftEncoderCount;
+    private int lastBackRightEncoderCount;
+    private int lastFrontLeftEncoderCount;
+    private int lastFrontRightEncoderCount;
 
 
     // Create the controller with all the motors needed to control the robot. If another motor,
     // servo, or sensor is added, put that in here so the class can access it.
     public AprilTagRobotController(DcMotorEx backLeft, DcMotorEx backRight,
                                   DcMotorEx frontLeft, DcMotorEx frontRight,
-                                  IMU gyro, SparkFunOTOS photoSensor, WebcamName camera,
-                                  LinearOpMode robot) {
+                                  IMU gyro, SparkFunOTOS photoSensor, WebcamName camera, double startX,
+                                   double startY, double startH, LinearOpMode robot) {
 
         backLeft.setDirection(DcMotorEx.Direction.FORWARD);
         backRight.setDirection(DcMotorEx.Direction.REVERSE);
@@ -172,6 +177,10 @@ public class AprilTagRobotController {
         this.angularVelocityTimer = new ElapsedTime();
         this.angularVelocityTimer.reset();
 
+        this.startH = startH;
+        this.xPos = startX;
+        this.yPos = startY;
+
         backLeft.setDirection(DcMotorEx.Direction.FORWARD);
         backRight.setDirection(DcMotorEx.Direction.REVERSE);
         frontLeft.setDirection(DcMotorEx.Direction.FORWARD);
@@ -189,8 +198,9 @@ public class AprilTagRobotController {
     // You cannot use distanceDrive or turnTo without a LinearOpMode.
     public AprilTagRobotController(DcMotorEx backLeft, DcMotorEx backRight,
                                   DcMotorEx frontLeft, DcMotorEx frontRight,
-                                  IMU gyro, SparkFunOTOS photoSensor, WebcamName camera) {
-        this(backLeft, backRight, frontLeft, frontRight, gyro, photoSensor, camera, null);
+                                  IMU gyro, SparkFunOTOS photoSensor, WebcamName camera,
+                                  double startX, double startY, double startH) {
+        this(backLeft, backRight, frontLeft, frontRight, gyro, photoSensor, camera, startX, startY, startH, null);
     }
 
     // TODO: Tune PID values + other constants like TURN_DRIFT_TIME.
@@ -265,6 +275,49 @@ public class AprilTagRobotController {
         backRight.setVelocity(2000 * backRightPower);
         frontLeft.setVelocity(2000 * frontLeftPower);
         frontRight.setVelocity(2000 * frontRightPower);
+
+//        int backLeftEncoderCount = backLeft.getCurrentPosition();
+//        int backRightEncoderCount = backRight.getCurrentPosition();
+//        int frontLeftEncoderCount = frontLeft.getCurrentPosition();
+//        int frontRightEncoderCount = frontRight.getCurrentPosition();
+//
+//        int deltaBackLeft = backLeftEncoderCount - lastBackLeftEncoderCount;
+//        int deltaBackRight = backRightEncoderCount - lastBackRightEncoderCount;
+//        int deltaFrontLeft = frontLeftEncoderCount - lastFrontLeftEncoderCount;
+//        int deltaFrontRight = frontRightEncoderCount - lastFrontRightEncoderCount;
+//
+//        lastBackLeftEncoderCount = backLeftEncoderCount;
+//        lastBackRightEncoderCount = backRightEncoderCount;
+//        lastFrontLeftEncoderCount = frontLeftEncoderCount;
+//        lastFrontRightEncoderCount = frontRightEncoderCount;
+//
+//        // If anything goes wrong, this is the most likely area to be wrong, check this
+//        double deltaForwardCounts = (deltaFrontLeft + deltaFrontRight + deltaBackLeft + deltaBackRight) / 4.0;
+//        double deltaStrafeCounts = (-deltaFrontLeft + deltaFrontRight + deltaBackLeft - deltaBackRight) / 4.0;
+//
+//        double deltaForward = deltaForwardCounts / FORWARD_COUNTS_PER_INCH;
+//        double deltaStrafe = deltaStrafeCounts / STRAFE_COUNTS_PER_INCH;
+
+        // Here we are just using the IMU for now, as I dont want to tune TURN_COUNTS_PER_RADIAN
+
+        // double deltaRotationCounts = (-deltaFrontLeft + deltaFrontRight - deltaBackLeft + deltaBackRight) / 4.0;
+        // double deltaHeading = deltaRotationCounts / TURN_COUNTS_PER_RADIAN;
+
+        // hPos += deltaHeading;
+
+        hPos = Math.toRadians(normalize(getAngleImuDegrees() + startH));
+//
+//        double sinH = Math.sin(hPos);
+//        double cosH = Math.cos(hPos);
+//
+//        // Here, something could go wrong too, make sure signs and such are correct.
+//        double deltaX = deltaStrafe * cosH - deltaForward * sinH;
+//        double deltaY = deltaStrafe * sinH + deltaForward * cosH;
+
+//        xPos += deltaX;
+//        yPos += deltaY;
+
+        updateRobotPosition();
     }
 
     // Behavior: Overloaded method of move. This sets the default of isTelemetry.
@@ -442,12 +495,6 @@ public class AprilTagRobotController {
             throw new RuntimeException("Tried to run aprilTagDrive but LinearOpMode object not given!");
         }
 
-        // Initialize last encoder counts
-        int lastBackLeftEncoderCount = backLeft.getCurrentPosition();
-        int lastBackRightEncoderCount = backRight.getCurrentPosition();
-        int lastFrontLeftEncoderCount = frontLeft.getCurrentPosition();
-        int lastFrontRightEncoderCount = frontRight.getCurrentPosition();
-
         double distance = Math.sqrt(Math.pow(wantedX - xPos, 2) + Math.pow(wantedY - yPos, 2));
         while (distance > MIN_DIST_TO_STOP && robot.opModeIsActive()) {
             wantedHeading = wantedH;
@@ -455,61 +502,20 @@ public class AprilTagRobotController {
             double dy = wantedY - yPos;
             double dx = wantedX - xPos;
 
+            robot.telemetry.addData("dx", dx);
+            robot.telemetry.addData("dy", dy);
+
             // Calculate move direction
-            double moveDirection = Math.atan2(dy, dx);
+            double moveDirection = Math.atan2(dx, dy);
 
-            double forward = -speed * Math.cos((moveDirection - hPos));
-            double strafe = speed * Math.sin((moveDirection - hPos));
+            double forward = -speed * Math.cos((moveDirection - Math.toRadians(hPos)));
+            double strafe = speed * Math.sin((moveDirection - Math.toRadians(hPos)));
             move(forward, strafe, 0.0, DEFAULT_HEADING_CORRECTION_POWER);
-
-            int backLeftEncoderCount = backLeft.getCurrentPosition();
-            int backRightEncoderCount = backRight.getCurrentPosition();
-            int frontLeftEncoderCount = frontLeft.getCurrentPosition();
-            int frontRightEncoderCount = frontRight.getCurrentPosition();
-
-            int deltaBackLeft = backLeftEncoderCount - lastBackLeftEncoderCount;
-            int deltaBackRight = backRightEncoderCount - lastBackRightEncoderCount;
-            int deltaFrontLeft = frontLeftEncoderCount - lastFrontLeftEncoderCount;
-            int deltaFrontRight = frontRightEncoderCount - lastFrontRightEncoderCount;
-
-            lastBackLeftEncoderCount = backLeftEncoderCount;
-            lastBackRightEncoderCount = backRightEncoderCount;
-            lastFrontLeftEncoderCount = frontLeftEncoderCount;
-            lastFrontRightEncoderCount = frontRightEncoderCount;
-
-            // If anything goes wrong, this is the most likely area to be wrong, check this
-            double deltaForwardCounts = (deltaFrontLeft + deltaFrontRight + deltaBackLeft + deltaBackRight) / 4.0;
-            double deltaStrafeCounts = (-deltaFrontLeft + deltaFrontRight + deltaBackLeft - deltaBackRight) / 4.0;
-
-            // Convert counts to inches
-            double deltaForward = deltaForwardCounts / FORWARD_COUNTS_PER_INCH;
-            double deltaStrafe = deltaStrafeCounts / STRAFE_COUNTS_PER_INCH;
-
-            // Here we are just using the IMU for now, as I dont want to tune TURN_COUNTS_PER_RADIAN
-
-            // double deltaRotationCounts = (-deltaFrontLeft + deltaFrontRight - deltaBackLeft + deltaBackRight) / 4.0;
-            // double deltaHeading = deltaRotationCounts / TURN_COUNTS_PER_RADIAN;
-
-            // hPos += deltaHeading;
-
-            hPos = Math.toRadians(getAngleImuDegrees());
-
-            double sinH = Math.sin(hPos);
-            double cosH = Math.cos(hPos);
-
-            // Here, something could go wrong too, make sure signs and such are correct.
-            double deltaX = deltaStrafe * cosH - deltaForward * sinH;
-            double deltaY = deltaStrafe * sinH + deltaForward * cosH;
-
-            xPos += deltaX;
-            yPos += deltaY;
 
             distance = Math.sqrt(Math.pow(wantedX - xPos, 2) + Math.pow(wantedY - yPos, 2));
         }
+        move(0, 0, 0, 0);
     }
-
-
-
 
     // Behavior: Drives the robot continuously based on forward, strafe, and turn power.
     // Params:
@@ -648,9 +654,9 @@ public class AprilTagRobotController {
     //      - Telemetry telemetry: The telemetry to send the information to.
     public void sendTelemetry(Telemetry telemetry) {
         SparkFunOTOS.Pose2D pos = getSparkfunPosition();
-        telemetry.addData("X Position", pos.x);
-        telemetry.addData("Y Position", pos.y);
-        telemetry.addData("Heading", pos.h);
+        telemetry.addData("X Position", xPos);
+        telemetry.addData("Y Position", yPos);
+        telemetry.addData("Heading", hPos);
         telemetry.addData("", "");
         telemetry.addData("Forward", currentForward);
         telemetry.addData("Strafe", currentStrafe);

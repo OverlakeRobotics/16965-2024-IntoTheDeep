@@ -31,6 +31,7 @@ package org.firstinspires.ftc.teamcode;
 
 import android.annotation.SuppressLint;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -66,11 +67,17 @@ import java.util.List;
  * Use Android Studio to Copy this Class, and Paste it into your team's code folder with a new name.
  * Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list.
  */
+@Config
 @TeleOp(name = "Concept: AprilTag Localization", group = "Concept")
-@Disabled
 public class ConceptAprilTagLocalization extends LinearOpMode {
 
     private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
+    public static double x = 7;
+    public static double y = 5.6;
+    public static double z = 7;
+    public static double yaw = 90;
+    public static double pitch = -82;
+    public static double roll = 14;
 
     /**
      * Variables to store the position and orientation of the camera on the robot. Setting these
@@ -96,10 +103,8 @@ public class ConceptAprilTagLocalization extends LinearOpMode {
      * it's pointing straight left, -90 degrees for straight right, etc. You can also set the roll
      * to +/-90 degrees if it's vertical, or 180 degrees if it's upside-down.
      */
-    private Position cameraPosition = new Position(DistanceUnit.INCH,
-            -8.75, -0.75, 0, 0);
-    private YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,
-            90, -90, 0, 0);
+    private Position cameraPosition;
+    private YawPitchRollAngles cameraOrientation;
 
     /**
      * The variable to store our instance of the AprilTag processor.
@@ -149,7 +154,10 @@ public class ConceptAprilTagLocalization extends LinearOpMode {
      * Initialize the AprilTag processor.
      */
     private void initAprilTag() {
-
+        cameraPosition = new Position(DistanceUnit.INCH,
+                x, y, z, 0);
+        cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,
+                yaw, pitch, roll, 0);
         // Create the AprilTag processor.
         aprilTag = new AprilTagProcessor.Builder()
 
