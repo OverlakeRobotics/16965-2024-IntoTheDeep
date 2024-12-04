@@ -11,6 +11,10 @@ import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.teamcode.AprilTagRobotController;
+import org.firstinspires.ftc.teamcode.Intake;
+import org.firstinspires.ftc.teamcode.Pivot;
+import org.firstinspires.ftc.teamcode.ViperSlide;
 
 @Config
 @Autonomous(name="April Test", group="Robot")
@@ -69,8 +73,11 @@ public class TestApril extends LinearOpMode {
         robotController.distanceDrive(12.0, 180.0, DRIVE_SPEED, 0);
 
 
-        //robotController.distanceDrive(38.5, -90.0, DRIVE_SPEED, 0);
-        robotController.aprilTagDrive(58.6, 56.3, 0, 1.0);
+        robotController.distanceDrive(38.5, -90.0, DRIVE_SPEED, 0);
+        robotController.aprilTagDriveTest(58.6, 56.3, 0, 1.0);
+        while (runtime.seconds() < 20) {
+            telemetry.addData("hi", "hi");
+        }
 
         intake.setWristDegree(0);
         intake.largeOpen();
@@ -101,7 +108,12 @@ public class TestApril extends LinearOpMode {
         robotController.sleep(2);
         robotController.distanceDrive(7, -45, DRIVE_SPEED, -45);
         robotController.turnTo(0, TURN_SPEED);
-        robotController.distanceDrive(5, -90.0, DRIVE_SPEED, 0);
+        robotController.distanceDrive(5, 90.0, DRIVE_SPEED, 0);
+        robotController.distanceDrive(5, 0, DRIVE_SPEED, 0);
+
+        robotController.aprilTagDriveTest(58.6, 56.3, 0, 1.0);
+
+        robotController.distanceDrive(8.5, -90.0, DRIVE_SPEED);
 
         // pick up second neutral sample
         intake.setWristDegree(0);

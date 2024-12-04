@@ -52,6 +52,9 @@ public class AprilTagRobotController {
     public static double Kp = 0.05;
     public static double Kd = 0.009;
     public static double Ki = 0.0007;
+    public static double Kp_APRIL = 0.05;
+    public static double Kd_APRIL = 0.009;
+    public static double Ki_APRIL = 0.0007;
     public static final double ANGULAR_SCALAR = 0.9954681619;
     public static double LINEAR_SCALAR = 1.127;
 
@@ -276,27 +279,27 @@ public class AprilTagRobotController {
         frontLeft.setVelocity(2000 * frontLeftPower);
         frontRight.setVelocity(2000 * frontRightPower);
 
-//        int backLeftEncoderCount = backLeft.getCurrentPosition();
-//        int backRightEncoderCount = backRight.getCurrentPosition();
-//        int frontLeftEncoderCount = frontLeft.getCurrentPosition();
-//        int frontRightEncoderCount = frontRight.getCurrentPosition();
-//
-//        int deltaBackLeft = backLeftEncoderCount - lastBackLeftEncoderCount;
-//        int deltaBackRight = backRightEncoderCount - lastBackRightEncoderCount;
-//        int deltaFrontLeft = frontLeftEncoderCount - lastFrontLeftEncoderCount;
-//        int deltaFrontRight = frontRightEncoderCount - lastFrontRightEncoderCount;
-//
-//        lastBackLeftEncoderCount = backLeftEncoderCount;
-//        lastBackRightEncoderCount = backRightEncoderCount;
-//        lastFrontLeftEncoderCount = frontLeftEncoderCount;
-//        lastFrontRightEncoderCount = frontRightEncoderCount;
-//
-//        // If anything goes wrong, this is the most likely area to be wrong, check this
-//        double deltaForwardCounts = (deltaFrontLeft + deltaFrontRight + deltaBackLeft + deltaBackRight) / 4.0;
-//        double deltaStrafeCounts = (-deltaFrontLeft + deltaFrontRight + deltaBackLeft - deltaBackRight) / 4.0;
-//
-//        double deltaForward = deltaForwardCounts / FORWARD_COUNTS_PER_INCH;
-//        double deltaStrafe = deltaStrafeCounts / STRAFE_COUNTS_PER_INCH;
+        int backLeftEncoderCount = backLeft.getCurrentPosition();
+        int backRightEncoderCount = backRight.getCurrentPosition();
+        int frontLeftEncoderCount = frontLeft.getCurrentPosition();
+        int frontRightEncoderCount = frontRight.getCurrentPosition();
+
+        int deltaBackLeft = backLeftEncoderCount - lastBackLeftEncoderCount;
+        int deltaBackRight = backRightEncoderCount - lastBackRightEncoderCount;
+        int deltaFrontLeft = frontLeftEncoderCount - lastFrontLeftEncoderCount;
+        int deltaFrontRight = frontRightEncoderCount - lastFrontRightEncoderCount;
+
+        lastBackLeftEncoderCount = backLeftEncoderCount;
+        lastBackRightEncoderCount = backRightEncoderCount;
+        lastFrontLeftEncoderCount = frontLeftEncoderCount;
+        lastFrontRightEncoderCount = frontRightEncoderCount;
+
+        // If anything goes wrong, this is the most likely area to be wrong, check this
+        double deltaForwardCounts = (deltaFrontLeft + deltaFrontRight + deltaBackLeft + deltaBackRight) / 4.0;
+        double deltaStrafeCounts = (-deltaFrontLeft + deltaFrontRight + deltaBackLeft - deltaBackRight) / 4.0;
+
+        double deltaForward = deltaForwardCounts / FORWARD_COUNTS_PER_INCH;
+        double deltaStrafe = deltaStrafeCounts / STRAFE_COUNTS_PER_INCH;
 
         // Here we are just using the IMU for now, as I dont want to tune TURN_COUNTS_PER_RADIAN
 
@@ -306,16 +309,16 @@ public class AprilTagRobotController {
         // hPos += deltaHeading;
 
         hPos = normalize(getAngleImuDegrees() + startH);
-//
-//        double sinH = Math.sin(hPos);
-//        double cosH = Math.cos(hPos);
-//
-//        // Here, something could go wrong too, make sure signs and such are correct.
-//        double deltaX = deltaStrafe * cosH - deltaForward * sinH;
-//        double deltaY = deltaStrafe * sinH + deltaForward * cosH;
 
-//        xPos += deltaX;
-//        yPos += deltaY;
+        double sinH = Math.sin(Math.toRadians(hPos));
+        double cosH = Math.cos(Math.toRadians(hPos));
+
+        // Here, something could go wrong too, make sure signs and such are correct.
+        double deltaX = deltaStrafe * cosH - deltaForward * sinH;
+        double deltaY = deltaStrafe * sinH + deltaForward * cosH;
+
+        xPos += deltaX;
+        yPos -= deltaY;
 
         updateRobotPosition();
     }
@@ -473,7 +476,7 @@ public class AprilTagRobotController {
             currentPosition = getSparkfunPosition();
             double dy = wantedPosition.y - currentPosition.y * positionMultiplier;
             double dx = wantedPosition.x - currentPosition.x * positionMultiplier;
-            double moveDirection = Math.atan2(dx, dy);
+            double moveDirection = Math.atan2(dy, dx);
             double forward = -speed * Math.cos((moveDirection - currentPosition.h));
             double strafe = speed * Math.sin((moveDirection - currentPosition.h));
             robot.telemetry.addData("Distance", distance);
@@ -508,11 +511,75 @@ public class AprilTagRobotController {
             // Calculate move direction
             double moveDirection = Math.atan2(dx, dy);
 
-            double forward = -speed * Math.cos((moveDirection - Math.toRadians(hPos)));
-            double strafe = speed * Math.sin((moveDirection - Math.toRadians(hPos)));
-            move(forward, strafe, 0.0, DEFAULT_HEADING_CORRECTION_POWER);
+            double forward = -speed * distance * Math.cos((moveDirection - Math.toRadians(hPos))) / 2;
+            double strafe = speed * distance * Math.sin((moveDirection - Math.toRadians(hPos))) / 2;
+            move(forward, strafe, 0.0, DEFAULT_HEADING_CORRECTION_POWER / 2);
 
             distance = Math.sqrt(Math.pow(wantedX - xPos, 2) + Math.pow(wantedY - yPos, 2));
+        }
+        move(0, 0, 0, 0);
+    }
+
+    public void aprilTagDriveTest(double wantedX, double wantedY, double wantedH, double speed) throws RuntimeException {
+        if (robot == null) {
+            throw new RuntimeException("Tried to run aprilTagDrive but LinearOpMode object not given!");
+        }
+
+        double currentHeading = getAngleImuDegrees();
+
+        double distance = Math.sqrt(Math.pow(wantedX - xPos, 2) + Math.pow(wantedY - yPos, 2));
+        if (distance > MIN_DIST_TO_STOP && robot.opModeIsActive()) {
+            wantedHeading = wantedH;
+
+            double dy = wantedY - yPos;
+            double dx = wantedX - xPos;
+
+            robot.telemetry.addData("dx", dx);
+            robot.telemetry.addData("dy", dy);
+
+            // Calculate move direction
+            double moveDirection = Math.atan2(dy, dx);
+
+            double forward;
+            double strafe;
+
+            forward = Math.cos(moveDirection - ((currentHeading) * (Math.PI / 180)));
+            strafe = Math.sin(moveDirection - ((currentHeading) * (Math.PI / 180)));
+
+            double moveCountMult = Math.sqrt(Math.pow(Math.cos(moveDirection) * (1.0 / FORWARD_COUNTS_PER_INCH), 2) +
+                    Math.pow(Math.sin(moveDirection) * (1.0 / STRAFE_COUNTS_PER_INCH), 2));
+
+            int forwardCounts = (int)(forward * distance / moveCountMult);
+            int strafeCounts = (int)(strafe * distance / moveCountMult);
+
+            int backLeftTarget = backLeft.getCurrentPosition() - forwardCounts + strafeCounts;
+            int backRightTarget = backRight.getCurrentPosition() - forwardCounts - strafeCounts;
+            int frontLeftTarget = frontLeft.getCurrentPosition() - forwardCounts - strafeCounts;
+            int frontRightTarget = frontRight.getCurrentPosition() - forwardCounts + strafeCounts;
+
+            backLeft.setTargetPosition(backLeftTarget);
+            backRight.setTargetPosition(backRightTarget);
+            frontLeft.setTargetPosition(frontLeftTarget);
+            frontRight.setTargetPosition(frontRightTarget);
+
+            if (backLeft.getMode() != DcMotorEx.RunMode.RUN_TO_POSITION) {
+                backLeft.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+                backRight.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+                frontLeft.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+                frontRight.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+            }
+
+            move(speed, 0.0, 0.0, 0.0);
+
+            distance = Math.sqrt(Math.pow(wantedX - xPos, 2) + Math.pow(wantedY - yPos, 2));
+        }
+        while ((backLeft.isBusy() || backRight.isBusy() || frontLeft.isBusy() || frontRight.isBusy())
+                && robot.opModeIsActive()) {
+            robot.telemetry.addData("Distance", distance);
+            move(speed, 0.0, 0.0, 0.0);
+        }
+        if (distance > MIN_DIST_TO_STOP) {
+            aprilTagDriveTest(wantedX, wantedY, wantedH, speed);
         }
         move(0, 0, 0, 0);
     }

@@ -277,7 +277,7 @@ public class MecanumDriver extends OpMode {
         if (gamepad2.x != lastXButton && gamepad2.x) {
             if (!isPickupSubReady && !isHingeDownReady) {
                 viperSlide.setTargetPosition(ViperSlide.MIN_POSITION);
-                pivot.setAngleDegrees(5);
+                pivot.setAngleDegrees(15);
                 hingeDegree = 90;
                 isHingeDownReady = true;
             } else if (isHingeDownReady) {
