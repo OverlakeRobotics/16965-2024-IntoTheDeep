@@ -6,16 +6,17 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 @Config
 @TeleOp(name="Pivot PIDF Tuner", group="TeleOp")
 public class PivotPIDFTuner extends OpMode {
-    public static int target;
-    public static double kp;
-    public static double ki;
-    public static double kd;
-    public static double kf;
+    public static int target = 0;
+    public static double kp = 0.0035;
+    public static double ki = 0.00008;
+    public static double kd = 0.00014;
+    public static double kf = 0.1;
     private PIDController controller;
     private DcMotorEx left;
     private DcMotorEx right;
@@ -28,8 +29,10 @@ public class PivotPIDFTuner extends OpMode {
         right = hardwareMap.get(DcMotorEx.class, "PIVOTRIGHT");
         left.setDirection(DcMotorEx.Direction.REVERSE);
         right.setDirection(DcMotorEx.Direction.FORWARD);
-        left.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-        left.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        left.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        right.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        left.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        right.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 
     @Override
@@ -46,5 +49,11 @@ public class PivotPIDFTuner extends OpMode {
 
         telemetry.addData("pos", currPos);
         telemetry.addData("target", target);
+        telemetry.addData("left power", left.getPower());
+        telemetry.addData("right power", right.getPower());
+        telemetry.addData("pid", pid);
+        telemetry.addData("ff", feedForward);
+        telemetry.addData("power", power);
+        telemetry.addData("currPos", currPos);
     }
 }

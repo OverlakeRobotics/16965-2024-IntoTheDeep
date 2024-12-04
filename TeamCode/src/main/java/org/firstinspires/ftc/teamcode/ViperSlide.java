@@ -13,7 +13,7 @@ public class ViperSlide {
     public static final int MOVE_COUNTS_PER_INCH = 111;
     public static final double BASE_ARM_LENGTH = 15;
     public static final double CHASSIS_TO_PIVOT_LENGTH = 9;
-    public static final int MIN_POSITION = 20;
+    public static final int MIN_POSITION = 35;
     public static final int MAX_POSITION = 3000;   // Adjust for your robot
     public static final int MAX_POSITION_HANG = 1320;
 

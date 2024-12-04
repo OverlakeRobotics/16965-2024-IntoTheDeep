@@ -48,7 +48,7 @@ public class AprilTagRobotController {
     public static final double INCHES_LEFT_TO_SLOW_DOWN = 8;
     public static final double INCHES_LEFT_TO_SPEED_UP = 5;
     public static final double TURN_DRIFT_TIME = 0;
-    public static final double MIN_DIST_TO_STOP = 0.1;
+    public static final double MIN_DIST_TO_STOP = 0.5;
     public static double Kp = 0.05;
     public static double Kd = 0.009;
     public static double Ki = 0.0007;
@@ -511,75 +511,11 @@ public class AprilTagRobotController {
             // Calculate move direction
             double moveDirection = Math.atan2(dx, dy);
 
-            double forward = -speed * distance * Math.cos((moveDirection - Math.toRadians(hPos))) / 2;
-            double strafe = speed * distance * Math.sin((moveDirection - Math.toRadians(hPos))) / 2;
+            double forward = -speed * Math.sqrt(distance) * Math.cos((moveDirection - Math.toRadians(hPos))) / 2;
+            double strafe = speed * Math.sqrt(distance) * Math.sin((moveDirection - Math.toRadians(hPos))) / 2;
             move(forward, strafe, 0.0, DEFAULT_HEADING_CORRECTION_POWER / 2);
 
             distance = Math.sqrt(Math.pow(wantedX - xPos, 2) + Math.pow(wantedY - yPos, 2));
-        }
-        move(0, 0, 0, 0);
-    }
-
-    public void aprilTagDriveTest(double wantedX, double wantedY, double wantedH, double speed) throws RuntimeException {
-        if (robot == null) {
-            throw new RuntimeException("Tried to run aprilTagDrive but LinearOpMode object not given!");
-        }
-
-        double currentHeading = getAngleImuDegrees();
-
-        double distance = Math.sqrt(Math.pow(wantedX - xPos, 2) + Math.pow(wantedY - yPos, 2));
-        if (distance > MIN_DIST_TO_STOP && robot.opModeIsActive()) {
-            wantedHeading = wantedH;
-
-            double dy = wantedY - yPos;
-            double dx = wantedX - xPos;
-
-            robot.telemetry.addData("dx", dx);
-            robot.telemetry.addData("dy", dy);
-
-            // Calculate move direction
-            double moveDirection = Math.atan2(dy, dx);
-
-            double forward;
-            double strafe;
-
-            forward = Math.cos(moveDirection - ((currentHeading) * (Math.PI / 180)));
-            strafe = Math.sin(moveDirection - ((currentHeading) * (Math.PI / 180)));
-
-            double moveCountMult = Math.sqrt(Math.pow(Math.cos(moveDirection) * (1.0 / FORWARD_COUNTS_PER_INCH), 2) +
-                    Math.pow(Math.sin(moveDirection) * (1.0 / STRAFE_COUNTS_PER_INCH), 2));
-
-            int forwardCounts = (int)(forward * distance / moveCountMult);
-            int strafeCounts = (int)(strafe * distance / moveCountMult);
-
-            int backLeftTarget = backLeft.getCurrentPosition() - forwardCounts + strafeCounts;
-            int backRightTarget = backRight.getCurrentPosition() - forwardCounts - strafeCounts;
-            int frontLeftTarget = frontLeft.getCurrentPosition() - forwardCounts - strafeCounts;
-            int frontRightTarget = frontRight.getCurrentPosition() - forwardCounts + strafeCounts;
-
-            backLeft.setTargetPosition(backLeftTarget);
-            backRight.setTargetPosition(backRightTarget);
-            frontLeft.setTargetPosition(frontLeftTarget);
-            frontRight.setTargetPosition(frontRightTarget);
-
-            if (backLeft.getMode() != DcMotorEx.RunMode.RUN_TO_POSITION) {
-                backLeft.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
-                backRight.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
-                frontLeft.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
-                frontRight.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
-            }
-
-            move(speed, 0.0, 0.0, 0.0);
-
-            distance = Math.sqrt(Math.pow(wantedX - xPos, 2) + Math.pow(wantedY - yPos, 2));
-        }
-        while ((backLeft.isBusy() || backRight.isBusy() || frontLeft.isBusy() || frontRight.isBusy())
-                && robot.opModeIsActive()) {
-            robot.telemetry.addData("Distance", distance);
-            move(speed, 0.0, 0.0, 0.0);
-        }
-        if (distance > MIN_DIST_TO_STOP) {
-            aprilTagDriveTest(wantedX, wantedY, wantedH, speed);
         }
         move(0, 0, 0, 0);
     }

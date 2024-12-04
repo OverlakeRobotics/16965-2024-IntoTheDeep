@@ -74,10 +74,8 @@ public class TestApril extends LinearOpMode {
 
 
         robotController.distanceDrive(38.5, -90.0, DRIVE_SPEED, 0);
-        robotController.aprilTagDriveTest(58.6, 56.3, 0, 1.0);
-        while (runtime.seconds() < 20) {
-            telemetry.addData("hi", "hi");
-        }
+        robotController.aprilTagDrive(58.6, 56.3, 0, 0.5);
+
 
         intake.setWristDegree(0);
         intake.largeOpen();
@@ -101,6 +99,7 @@ public class TestApril extends LinearOpMode {
         intake.hingeToDegree(187);
         robotController.distanceDrive(7, -180.0, DRIVE_SPEED - 2, -45);
         intake.largeOpen();
+        robotController.sleep(0.2);
 
         intake.hingeToDegree(90);
         robotController.sleep(0.2);
@@ -111,9 +110,9 @@ public class TestApril extends LinearOpMode {
         robotController.distanceDrive(5, 90.0, DRIVE_SPEED, 0);
         robotController.distanceDrive(5, 0, DRIVE_SPEED, 0);
 
-        robotController.aprilTagDriveTest(58.6, 56.3, 0, 1.0);
+        robotController.aprilTagDrive(58.6, 56.3, 0, 1.0);
 
-        robotController.distanceDrive(8.5, -90.0, DRIVE_SPEED);
+        robotController.distanceDrive(11, -90.0, DRIVE_SPEED);
 
         // pick up second neutral sample
         intake.setWristDegree(0);
