@@ -207,7 +207,7 @@ public class MecanumDriver extends OpMode {
             isSpecimenReady = false;
         }
         int hingeDegreeChange = (int) gamepad2.left_stick_y * 8;
-        if (maxViperExtension - viperSlide.getCurrentPositionInches() > 6 || hingeDegree + hingeDegreeChange <= 15 || maxViperExtension == 18) {
+        if (maxViperExtension - viperSlide.getCurrentPositionInches() > 6 || hingeDegree + hingeDegreeChange <= 15 || maxViperExtension == 18 || pivot.getAngleDegrees() > 70) {
             hingeDegree += hingeDegreeChange;
         }
 
@@ -293,7 +293,7 @@ public class MecanumDriver extends OpMode {
                 isPickupSubReady = false;
                 isRetractVipersReady = true;
             } else {
-                pivot.setAngleDegrees(0);
+                pivot.setAngleDegrees(15);
                 bMacroStartedTime = runtime.seconds();
                 bMacroActivated = true;
                 hingeDegree = 90;
@@ -306,7 +306,7 @@ public class MecanumDriver extends OpMode {
         if (gamepad2.y) {
             pivot.setAngleDegrees(95);
             viperSlide.setTargetPosition(ViperSlide.MAX_POSITION);
-            hingeDegree = 45;
+            hingeDegree = 65;
             intake.setWristDegree(0);
             isPickupSubReady = false;
             isHingeDownReady = false;
