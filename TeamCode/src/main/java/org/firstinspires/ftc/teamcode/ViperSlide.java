@@ -9,7 +9,7 @@ public class ViperSlide {
     private DcMotorEx leftMotor;
     private DcMotorEx rightMotor;
     public static final double DEFAULT_POWER = 0.65;
-    public static final int POSITION_TOLERANCE = 10;
+    public static final int POSITION_TOLERANCE = 20;
     public static final int MOVE_COUNTS_PER_INCH = 111;
     public static final double BASE_ARM_LENGTH = 15;
     public static final double CHASSIS_TO_PIVOT_LENGTH = 9;
@@ -133,11 +133,15 @@ public class ViperSlide {
         if (leftMotor.getMode() != DcMotorEx.RunMode.RUN_TO_POSITION) {
             leftMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
             rightMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
-            leftMotor.setPower(DEFAULT_POWER);
-            rightMotor.setPower(DEFAULT_POWER);
+            leftMotor.setVelocity(DEFAULT_POWER * 2000);
+            rightMotor.setVelocity(DEFAULT_POWER * 2000);
         }
         currentState = SlideState.HOLDING;
         return true;
+    }
+
+    public void waitForFinish() {
+        while (!isAtTargetPosition()) {}
     }
 
     public boolean isAtTargetPosition() {

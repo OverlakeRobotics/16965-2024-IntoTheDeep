@@ -125,6 +125,10 @@ public class Pivot {
         currentState = PivotState.HOLDING;
     }
 
+    public void waitForFinish() {
+        while (!isAtTargetPosition()) {}
+    }
+
     public boolean isAtTargetPosition() {
         int leftError = Math.abs(leftMotor.getCurrentPosition() - targetPosition);
         int rightError = Math.abs(rightMotor.getCurrentPosition() - targetPosition);
