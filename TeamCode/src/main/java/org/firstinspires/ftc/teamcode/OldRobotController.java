@@ -71,7 +71,7 @@ public class OldRobotController {
     // servo, or sensor is added, put that in here so the class can access it.
     public OldRobotController(DcMotorEx backLeft, DcMotorEx backRight,
                               DcMotorEx frontLeft, DcMotorEx frontRight,
-                              IMU gyro, SparkFunOTOS photoSensor, LinearOpMode robot) {
+                              IMU gyro, LinearOpMode robot) {
 
         backLeft.setDirection(DcMotorEx.Direction.FORWARD);
         backRight.setDirection(DcMotorEx.Direction.REVERSE);
@@ -110,8 +110,8 @@ public class OldRobotController {
     // You cannot use distanceDrive or turnTo without a LinearOpMode.
     public OldRobotController(DcMotorEx backLeft, DcMotorEx backRight,
                               DcMotorEx frontLeft, DcMotorEx frontRight,
-                              IMU gyro, SparkFunOTOS photoSensor) {
-        this(backLeft, backRight, frontLeft, frontRight, gyro, photoSensor, null);
+                              IMU gyro) {
+        this(backLeft, backRight, frontLeft, frontRight, gyro, null);
     }
 
     // TODO: Tune PID values + other constants like TURN_DRIFT_TIME.
@@ -196,10 +196,6 @@ public class OldRobotController {
     //      - double headingCorrectionPower: The speed of heading correction.
     private void move(double forward, double strafe, double turn, double headingCorrectionPower) {
         move(forward, strafe, turn, headingCorrectionPower, DEFAULT_SEND_TELEMETRY);
-    }
-
-    public SparkFunOTOS.Pose2D getPosition() {
-        return photoSensor.getPosition();
     }
 
     // TODO: Find exact values for distance and implement it in COUNTS_PER_INCH to make this method precise.
@@ -315,32 +311,32 @@ public class OldRobotController {
     // Params:
     //      - SparkFunOTOS.Pose2D position: The position to drive the robot to.
     //      - double speed: The speed at which the robot will move.
-    public void positionDrive(SparkFunOTOS.Pose2D wantedPosition, double speed) {
-        SparkFunOTOS.Pose2D currentPosition = getPosition();
-        double positionMultiplier = (54 - (0.005 * speed * 2000 / 3)) / 50;
-//        double positionMultiplier = 1;
-        double distance = Math.sqrt(Math.pow(currentPosition.x * positionMultiplier - wantedPosition.x, 2) + Math.pow(currentPosition.y * positionMultiplier - wantedPosition.y, 2));
-        while (distance > MIN_DIST_TO_STOP && robot.opModeIsActive()) {
-            wantedHeading = wantedPosition.h;
-            currentPosition = getPosition();
-            double dy = wantedPosition.y - currentPosition.y * positionMultiplier;
-            double dx = wantedPosition.x - currentPosition.x * positionMultiplier;
-            double moveDirection = Math.atan2(dx, dy);
-            double forward = -speed * Math.cos((moveDirection - currentPosition.h));
-            double strafe = speed * Math.sin((moveDirection - currentPosition.h));
-            robot.telemetry.addData("Distance", distance);
-            robot.telemetry.addData("dx", dx);
-            robot.telemetry.addData("dy", dy);
-            robot.telemetry.addData("Move direction", moveDirection);
-            move(forward, 0.0, 0.0, DEFAULT_HEADING_CORRECTION_POWER);
-//            distance = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
-            distance = dy;
-        }
-        // Stop the robot
-        move(0, 0, 0, 0);
-//        currentPosition = getPosition();
-//        photoSensor.setPosition(new SparkFunOTOS.Pose2D(currentPosition.x * positionMultiplier, currentPosition.y * positionMultiplier, currentPosition.h));
-    }
+//    public void positionDrive(SparkFunOTOS.Pose2D wantedPosition, double speed) {
+//        SparkFunOTOS.Pose2D currentPosition = getPosition();
+//        double positionMultiplier = (54 - (0.005 * speed * 2000 / 3)) / 50;
+////        double positionMultiplier = 1;
+//        double distance = Math.sqrt(Math.pow(currentPosition.x * positionMultiplier - wantedPosition.x, 2) + Math.pow(currentPosition.y * positionMultiplier - wantedPosition.y, 2));
+//        while (distance > MIN_DIST_TO_STOP && robot.opModeIsActive()) {
+//            wantedHeading = wantedPosition.h;
+//            currentPosition = getPosition();
+//            double dy = wantedPosition.y - currentPosition.y * positionMultiplier;
+//            double dx = wantedPosition.x - currentPosition.x * positionMultiplier;
+//            double moveDirection = Math.atan2(dx, dy);
+//            double forward = -speed * Math.cos((moveDirection - currentPosition.h));
+//            double strafe = speed * Math.sin((moveDirection - currentPosition.h));
+//            robot.telemetry.addData("Distance", distance);
+//            robot.telemetry.addData("dx", dx);
+//            robot.telemetry.addData("dy", dy);
+//            robot.telemetry.addData("Move direction", moveDirection);
+//            move(forward, 0.0, 0.0, DEFAULT_HEADING_CORRECTION_POWER);
+////            distance = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+//            distance = dy;
+//        }
+//        // Stop the robot
+//        move(0, 0, 0, 0);
+////        currentPosition = getPosition();
+////        photoSensor.setPosition(new SparkFunOTOS.Pose2D(currentPosition.x * positionMultiplier, currentPosition.y * positionMultiplier, currentPosition.h));
+//    }
 
     // Behavior: Drives the robot continuously based on forward, strafe, and turn power.
     // Params:
@@ -478,11 +474,6 @@ public class OldRobotController {
     // Params:
     //      - Telemetry telemetry: The telemetry to send the information to.
     public void sendTelemetry(Telemetry telemetry) {
-        SparkFunOTOS.Pose2D pos = getPosition();
-        telemetry.addData("X Position", pos.x);
-        telemetry.addData("Y Position", pos.y);
-        telemetry.addData("Heading", pos.h);
-        telemetry.addData("", "");
         telemetry.addData("Forward", currentForward);
         telemetry.addData("Strafe", currentStrafe);
         telemetry.addData("Turn", currentTurn);
