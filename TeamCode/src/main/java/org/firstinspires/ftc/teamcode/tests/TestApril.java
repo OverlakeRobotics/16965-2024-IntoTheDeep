@@ -154,7 +154,8 @@ public class TestApril extends LinearOpMode {
         viperSlide.setTargetPosition(ViperSlide.MIN_POSITION);
         robotController.sleep(0.2);
         robotController.distanceDrive(7, -45, DRIVE_SPEED, -45);
-        viperSlide.waitForFinish();
+        robotController.sleep(1.25);
+        pivot.setAngleDegrees(10);
         robotController.turnTo(0, TURN_SPEED);
 //        robotController.distanceDrive(64.622, 21.8014, DRIVE_SPEED, 0);
 

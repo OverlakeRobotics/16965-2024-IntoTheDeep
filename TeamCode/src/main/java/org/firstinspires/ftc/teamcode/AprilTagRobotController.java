@@ -95,6 +95,15 @@ public class AprilTagRobotController {
     private int lastBackRightEncoderCount;
     private int lastFrontLeftEncoderCount;
     private int lastFrontRightEncoderCount;
+    // For distanceDriveOneTick
+    private int backLeftTarget;
+    private int backRightTarget;
+    private int frontLeftTarget;
+    private int frontRightTarget;
+    private double moveCountMult;
+    private double holdHeading;
+    private double speed;
+    private double direction;
 
 
     // Create the controller with all the motors needed to control the robot. If another motor,
@@ -351,6 +360,104 @@ public class AprilTagRobotController {
                 hPos = detection.robotPose.getOrientation().getYaw(AngleUnit.DEGREES);
             }
         }
+    }
+
+    public void distanceDriveOneTickInit(double distance, double direction, double speed, double holdHeading, boolean isFieldCentric) {
+        if (robot == null) {
+            throw new RuntimeException("Tried to run distanceDrive but LinearOpMode object not given!");
+        }
+        holdHeading = normalize(holdHeading);
+        double currentHeading = getAngleImuDegrees();
+        double startingHeading = holdHeading;
+        // This still needs testing.
+        double forward;
+        double strafe;
+        if (isFieldCentric) {
+            forward = Math.cos((direction - currentHeading) * (Math.PI / 180));
+            strafe = Math.sin((direction - currentHeading) * (Math.PI / 180));
+        } else {
+            forward = Math.cos(direction * (Math.PI / 180));
+            strafe = Math.sin(direction * (Math.PI / 180));
+        }
+
+        this.direction = direction;
+        this.speed = speed;
+        this.holdHeading = holdHeading;
+
+        moveCountMult = Math.sqrt(Math.pow(Math.cos(direction * (Math.PI / 180)) * (1.0 / FORWARD_COUNTS_PER_INCH), 2) +
+                Math.pow(Math.sin(direction * (Math.PI / 180)) * (1.0 / STRAFE_COUNTS_PER_INCH), 2));
+
+        int forwardCounts = (int)(forward * distance / moveCountMult);
+        int strafeCounts = (int)(strafe * distance / moveCountMult);
+
+
+        backLeftTarget = backLeft.getCurrentPosition() - forwardCounts + strafeCounts;
+        backRightTarget = backRight.getCurrentPosition() - forwardCounts - strafeCounts;
+        frontLeftTarget = frontLeft.getCurrentPosition() - forwardCounts - strafeCounts;
+        frontRightTarget = frontRight.getCurrentPosition() - forwardCounts + strafeCounts;
+
+        backLeft.setTargetPosition(backLeftTarget);
+        backRight.setTargetPosition(backRightTarget);
+        frontLeft.setTargetPosition(frontLeftTarget);
+        frontRight.setTargetPosition(frontRightTarget);
+
+        backLeft.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+        backRight.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+        frontLeft.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+        frontRight.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+    }
+
+    public void distanceDriveOneTickInit(double distance, double direction, double speed, double holdHeading) {
+        distanceDriveOneTickInit(distance, direction, speed, holdHeading, true);
+    }
+
+    public boolean distanceDriveOneTick()
+            throws RuntimeException {
+        if (robot == null) {
+            throw new RuntimeException("Tried to run distanceDrive but LinearOpMode object not given!");
+        }
+
+        boolean done = false;
+
+        if ((backLeft.isBusy() || backRight.isBusy() || frontLeft.isBusy() || frontRight.isBusy())
+                && robot.opModeIsActive()) {
+            wantedHeading = holdHeading;
+            double distanceToDestination = (Math.abs(backLeftTarget - backLeft.getCurrentPosition()) +
+                    Math.abs(backRightTarget - backRight.getCurrentPosition()) +
+                    Math.abs(frontLeftTarget - frontLeft.getCurrentPosition()) +
+                    Math.abs(frontRightTarget - frontRight.getCurrentPosition())) / 4.0;
+            double distanceToDestinationInches = 2 * Math.sqrt(Math.pow(Math.cos(direction) *
+                    (distanceToDestination / FORWARD_COUNTS_PER_INCH), 2) + Math.pow(Math.sin(direction) *
+                    (distanceToDestination / STRAFE_COUNTS_PER_INCH), 2));
+            robot.telemetry.addData("Current Action", "Distance Driving");
+            robot.telemetry.addData("Distance To Target", distanceToDestination * moveCountMult);
+            robot.telemetry.addData("", "");
+            double headingCorrectionPower = 0.9 * speed;
+            if (speed < 2.0) {
+                headingCorrectionPower = 0;
+            }
+            if (distanceToDestinationInches <= INCHES_LEFT_TO_SLOW_DOWN) {
+                move(0.01 + speed * Math.sin(distanceToDestinationInches / INCHES_LEFT_TO_SLOW_DOWN * (Math.PI / 2)), 0.0, 0.0, headingCorrectionPower);
+            } else {
+                move(speed, 0.0, 0.0, headingCorrectionPower);
+            }
+
+            if (distanceToDestinationInches < 1) {
+                done = true;
+            } else {
+                return false;
+            }
+        }
+
+        if (done) {
+            // Stop movement and switch modes
+            move(0, 0, 0, 0);
+            backLeft.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+            backRight.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+            frontLeft.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+            frontRight.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        }
+        return true;
     }
 
     // TODO: Find exact values for distance and implement it in COUNTS_PER_INCH to make this method precise.

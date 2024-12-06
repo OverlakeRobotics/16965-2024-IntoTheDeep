@@ -123,7 +123,7 @@ public class ViperSlide {
 
     public boolean setTargetPosition(int position) {
         if (position < MIN_POSITION || position > MAX_POSITION) {
-            return false;
+            return true;
         }
         targetPosition = position;
         leftMotor.setTargetPosition(position);
@@ -133,11 +133,30 @@ public class ViperSlide {
         if (leftMotor.getMode() != DcMotorEx.RunMode.RUN_TO_POSITION) {
             leftMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
             rightMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
-            leftMotor.setVelocity(DEFAULT_POWER * 2000);
-            rightMotor.setVelocity(DEFAULT_POWER * 2000);
+            leftMotor.setPower(DEFAULT_POWER);
+            rightMotor.setPower(DEFAULT_POWER);
         }
         currentState = SlideState.HOLDING;
-        return true;
+        return false;
+    }
+
+    public boolean setTargetPosition(int position, double power) {
+        if (position < MIN_POSITION || position > MAX_POSITION) {
+            return true;
+        }
+        targetPosition = position;
+        leftMotor.setTargetPosition(position);
+        rightMotor.setTargetPosition(position);
+
+        // Only change mode and power if not already in RUN_TO_POSITION
+        if (leftMotor.getMode() != DcMotorEx.RunMode.RUN_TO_POSITION) {
+            leftMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+            rightMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+            leftMotor.setPower(DEFAULT_POWER);
+            rightMotor.setPower(DEFAULT_POWER);
+        }
+        currentState = SlideState.HOLDING;
+        return false;
     }
 
     public void waitForFinish() {
@@ -181,5 +200,13 @@ public class ViperSlide {
 
     public SlideState getCurrentState() {
         return currentState;
+    }
+
+    public double getPower() {
+        return (leftMotor.getPower() + rightMotor.getPower()) / 2;
+    }
+
+    public double getVelocity() {
+        return (leftMotor.getVelocity() + rightMotor.getVelocity()) / 2;
     }
 }
