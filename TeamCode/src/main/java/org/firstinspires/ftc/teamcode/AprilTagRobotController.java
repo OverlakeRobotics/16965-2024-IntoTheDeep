@@ -110,7 +110,7 @@ public class AprilTagRobotController {
     // servo, or sensor is added, put that in here so the class can access it.
     public AprilTagRobotController(DcMotorEx backLeft, DcMotorEx backRight,
                                   DcMotorEx frontLeft, DcMotorEx frontRight,
-                                  IMU gyro, SparkFunOTOS photoSensor, WebcamName camera, double startX,
+                                  IMU gyro, WebcamName camera, double startX,
                                    double startY, double startH, LinearOpMode robot) {
 
         backLeft.setDirection(DcMotorEx.Direction.FORWARD);
@@ -127,9 +127,6 @@ public class AprilTagRobotController {
         this.backRight = backRight;
         this.frontLeft = frontLeft;
         this.frontRight = frontRight;
-
-        this.photoSensor = photoSensor;
-
 
         // Create the AprilTag processor.
         aprilTag = new AprilTagProcessor.Builder()
@@ -210,9 +207,9 @@ public class AprilTagRobotController {
     // You cannot use distanceDrive or turnTo without a LinearOpMode.
     public AprilTagRobotController(DcMotorEx backLeft, DcMotorEx backRight,
                                   DcMotorEx frontLeft, DcMotorEx frontRight,
-                                  IMU gyro, SparkFunOTOS photoSensor, WebcamName camera,
+                                  IMU gyro, WebcamName camera,
                                   double startX, double startY, double startH) {
-        this(backLeft, backRight, frontLeft, frontRight, gyro, photoSensor, camera, startX, startY, startH, null);
+        this(backLeft, backRight, frontLeft, frontRight, gyro, camera, startX, startY, startH, null);
     }
 
     // TODO: Tune PID values + other constants like TURN_DRIFT_TIME.
@@ -340,10 +337,6 @@ public class AprilTagRobotController {
     //      - double headingCorrectionPower: The speed of heading correction.
     private void move(double forward, double strafe, double turn, double headingCorrectionPower) {
         move(forward, strafe, turn, headingCorrectionPower, DEFAULT_SEND_TELEMETRY);
-    }
-
-    public SparkFunOTOS.Pose2D getSparkfunPosition() {
-        return photoSensor.getPosition();
     }
 
     // Behavior: Update the position fields of the robot using april tags. If there are no april
@@ -573,32 +566,6 @@ public class AprilTagRobotController {
     // Params:
     //      - SparkFunOTOS.Pose2D position: The position to drive the robot to.
     //      - double speed: The speed at which the robot will move.
-    public void positionDrive(SparkFunOTOS.Pose2D wantedPosition, double speed) {
-        SparkFunOTOS.Pose2D currentPosition = getSparkfunPosition();
-        double positionMultiplier = (54 - (0.005 * speed * 2000 / 3)) / 50;
-//        double positionMultiplier = 1;
-        double distance = Math.sqrt(Math.pow(currentPosition.x * positionMultiplier - wantedPosition.x, 2) + Math.pow(currentPosition.y * positionMultiplier - wantedPosition.y, 2));
-        while (distance > MIN_DIST_TO_STOP && robot.opModeIsActive()) {
-            wantedHeading = wantedPosition.h;
-            currentPosition = getSparkfunPosition();
-            double dy = wantedPosition.y - currentPosition.y * positionMultiplier;
-            double dx = wantedPosition.x - currentPosition.x * positionMultiplier;
-            double moveDirection = Math.atan2(dy, dx);
-            double forward = -speed * Math.cos((moveDirection - currentPosition.h));
-            double strafe = speed * Math.sin((moveDirection - currentPosition.h));
-            robot.telemetry.addData("Distance", distance);
-            robot.telemetry.addData("dx", dx);
-            robot.telemetry.addData("dy", dy);
-            robot.telemetry.addData("Move direction", moveDirection);
-            move(forward, 0.0, 0.0, DEFAULT_HEADING_CORRECTION_POWER);
-//            distance = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
-            distance = dy;
-        }
-        // Stop the robot
-        move(0, 0, 0, 0);
-//        currentPosition = getPosition();
-//        photoSensor.setPosition(new SparkFunOTOS.Pose2D(currentPosition.x * positionMultiplier, currentPosition.y * positionMultiplier, currentPosition.h));
-    }
 
     public void aprilTagDrive(double wantedX, double wantedY, double wantedH, double speed) throws RuntimeException {
         if (robot == null) {
@@ -656,69 +623,18 @@ public class AprilTagRobotController {
     // Params:
     //      - Gamepad gamepad1: The first gamepad from driver control
     //      - Telemetry telemetry: Telemetry object, so telemetry can be sent to Driver Hub
-    public void tuneHeadingCorrection(Gamepad gamepad1, Telemetry telemetry) {
-        if (gamepad1.a) {
-            kTuner = (kTuner == 2) ? 0 : kTuner + 1;
-        }
-        if (kTuner == 0) {
-            if (gamepad1.dpad_down) {
-                Kp -= 0.001;
-            } else if (gamepad1.dpad_up) {
-                Kp += 0.001;
-            }
-            telemetry.addData("Tuning", "proportional");
-        } else if (kTuner == 1) {
-            if (gamepad1.dpad_down) {
-                Ki -= 0.000001;
-            } else if (gamepad1.dpad_up) {
-                Ki += 0.000001;
-            }
-            telemetry.addData("Tuning", "integral");
-        } else {
-            if (gamepad1.dpad_down) {
-                Kd -= 0.00001;
-            } else if (gamepad1.dpad_up) {
-                Kd += 0.00001;
-            }
-            telemetry.addData("Tuning", "derivative");
-        }
-        telemetry.addData("Kp", Kp);
-        telemetry.addData("Ki", Ki);
-        telemetry.addData("Kd", Kd);
-        telemetry.addData("", "");
-    }
 
     // Behavior: Tests the current Kp, Kd, and Ki values by turning the robot, stopping, and seeing
     //           how fast it stops.
     // Returns: A double representing how good the heading correction is. The lower, the better.
     // Parameters:
     //      - double testTime: The amount of time in seconds that the robot should test for.
-    public double testHeadingCorrection(double testTime) {
-        double startTime = runtime.seconds();
-        double totalError = 0;
-        double lastTime = runtime.seconds();
-        while (startTime + testTime > runtime.seconds()) {
-            double currentTime = runtime.seconds();
-            double deltaTime = currentTime - lastTime;
-            if ((int)currentTime % 2 == 0) {
-                move(0, 0, 0.5, DEFAULT_HEADING_CORRECTION_POWER);
-            } else {
-                move(0, 0, 0, DEFAULT_HEADING_CORRECTION_POWER);
-                totalError += deltaTime * currentAngularVelocity;
-            }
-            lastTime = currentTime;
-        }
-        return totalError;
-    }
 
     // Behavior: Overloaded method of continuousDrive. This sets the default of isFieldCentric.
     // Params:
     //      - double forwardPower: The power at which the robot will move forward.
     //      - double strafePower: The power at which the robot will strafe.
     //      - double turn: The power at which the robot will turn.
-    public void continuousDrive(double forwardPower, double strafePower, double turn) {
-        continuousDrive(forwardPower, strafePower, turn, DEFAULT_FIELD_CENTRIC);
-    }
 
     // Behavior: Turns the robot to a given angle.
     // Params:
