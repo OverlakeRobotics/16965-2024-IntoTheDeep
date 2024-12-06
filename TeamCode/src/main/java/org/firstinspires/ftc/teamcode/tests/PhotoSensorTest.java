@@ -19,7 +19,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.teamcode.RobotController;
+import org.firstinspires.ftc.teamcode.OldRobotController;
 
 /*
  * This OpMode illustrates how to use the SparkFun Qwiic Optical Tracking Odometry Sensor (OTOS)
@@ -36,7 +36,7 @@ import org.firstinspires.ftc.teamcode.RobotController;
 public class PhotoSensorTest extends LinearOpMode {
     // Create an instance of the sensor
     SparkFunOTOS myOtos;
-    RobotController robotController;
+    OldRobotController robotController;
     ElapsedTime runtime;
     public static double sleepTime = 40;
     public static double moveSpeed = 0.5;

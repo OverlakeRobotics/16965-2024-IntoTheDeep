@@ -11,7 +11,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 public class AutoObservation extends LinearOpMode {
     public static final double DRIVE_SPEED = 2.7;
     public static final double TURN_SPEED = 0.8;
-    private RobotController robotController;
+    private OldRobotController robotController;
     private final ElapsedTime runtime = new ElapsedTime();
     private final static double VIPER_POWER = 0.75;
     private final static double PIVOT_POWER = 0.35;
@@ -121,7 +121,7 @@ public class AutoObservation extends LinearOpMode {
                 hardwareMap.get(DcMotorEx.class, "PIVOTRIGHT")
         );
         intake = new Intake(hardwareMap);
-        robotController = new RobotController(backLeft, backRight, frontLeft, frontRight, gyro, photoSensor,this);
+        robotController = new OldRobotController(backLeft, backRight, frontLeft, frontRight, gyro, photoSensor,this);
 
         telemetry.addData("Status", "Initialized");
     }

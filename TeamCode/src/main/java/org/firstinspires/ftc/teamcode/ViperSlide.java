@@ -123,7 +123,7 @@ public class ViperSlide {
 
     public boolean setTargetPosition(int position) {
         if (position < MIN_POSITION || position > MAX_POSITION) {
-            return true;
+            return false;
         }
         targetPosition = position;
         leftMotor.setTargetPosition(position);
@@ -137,12 +137,12 @@ public class ViperSlide {
             rightMotor.setPower(DEFAULT_POWER);
         }
         currentState = SlideState.HOLDING;
-        return false;
+        return true;
     }
 
     public boolean setTargetPosition(int position, double power) {
         if (position < MIN_POSITION || position > MAX_POSITION) {
-            return true;
+            return false;
         }
         targetPosition = position;
         leftMotor.setTargetPosition(position);
@@ -152,11 +152,11 @@ public class ViperSlide {
         if (leftMotor.getMode() != DcMotorEx.RunMode.RUN_TO_POSITION) {
             leftMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
             rightMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
-            leftMotor.setPower(DEFAULT_POWER);
-            rightMotor.setPower(DEFAULT_POWER);
+            leftMotor.setPower(power);
+            rightMotor.setPower(power);
         }
         currentState = SlideState.HOLDING;
-        return false;
+        return true;
     }
 
     public void waitForFinish() {

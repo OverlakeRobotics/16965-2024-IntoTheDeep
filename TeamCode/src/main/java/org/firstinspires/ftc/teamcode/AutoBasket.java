@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
-import com.qualcomm.hardware.sparkfun.SparkFunOTOS;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -11,17 +10,13 @@ import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.teamcode.AprilTagRobotController;
-import org.firstinspires.ftc.teamcode.Intake;
-import org.firstinspires.ftc.teamcode.Pivot;
-import org.firstinspires.ftc.teamcode.ViperSlide;
 
 @Config
 @Autonomous(name="Auto Basket", group="Robot")
 public class AutoBasket extends LinearOpMode {
     public static final double DRIVE_SPEED = 2.7 + 0.75;
     public static final double TURN_SPEED = 1.5;
-    private AprilTagRobotController robotController;
+    private RobotController robotController;
     private final ElapsedTime runtime = new ElapsedTime();
     private final static double VIPER_MAX_POWER = 0.75;
     private final static double PIVOT_POWER = 0.35;
@@ -222,8 +217,6 @@ public class AutoBasket extends LinearOpMode {
 //        AutonomousNavigator navigator = new AutonomousNavigator(this, telemetry, 0, 0, 0);
         IMU gyro = hardwareMap.get(IMU.class, "imu2");
 
-        SparkFunOTOS photoSensor = hardwareMap.get(SparkFunOTOS.class, "PHOTOSENSOR");
-
         viperSlide = new ViperSlide(
                 hardwareMap.get(DcMotorEx.class, "VIPERLEFT"),
                 hardwareMap.get(DcMotorEx.class, "VIPERRIGHT")
@@ -235,7 +228,7 @@ public class AutoBasket extends LinearOpMode {
         );
         intake = new Intake(hardwareMap);
         WebcamName camera = hardwareMap.get(WebcamName.class, "Webcam 1");
-        robotController = new AprilTagRobotController(backLeft, backRight, frontLeft, frontRight, gyro, photoSensor, camera, 0, 0, -180, this);
+        robotController = new RobotController(backLeft, backRight, frontLeft, frontRight, gyro, camera, 0, 0, -180, this);
 
         telemetry.addData("Status", "Initialized");
     }

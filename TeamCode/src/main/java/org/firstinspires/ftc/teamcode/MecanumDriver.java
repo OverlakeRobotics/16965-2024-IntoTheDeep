@@ -39,6 +39,8 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+
 @Config
 @TeleOp(name="Mecanum Driver", group="TeleOp")
 public class MecanumDriver extends OpMode {
@@ -105,8 +107,6 @@ public class MecanumDriver extends OpMode {
 ////        wrist = hardwareMap.get(Servo.class, "CLAWRIGHT");
 //
         IMU gyro = hardwareMap.get(IMU.class, "imu2");
-//
-        SparkFunOTOS photoSensor = hardwareMap.get(SparkFunOTOS.class, "PHOTOSENSOR");
 
         viperSlide = new ViperSlide(
                 hardwareMap.get(DcMotorEx.class, "VIPERLEFT"),
@@ -120,7 +120,8 @@ public class MecanumDriver extends OpMode {
                 false
         );
         intake = new Intake(hardwareMap);
-        robotController = new RobotController(backLeft, backRight, frontLeft, frontRight, gyro, photoSensor);
+        WebcamName camera = hardwareMap.get(WebcamName.class, "Webcam 1");
+        robotController = new RobotController(backLeft, backRight, frontLeft, frontRight, gyro, camera, 0, 0, -180);
 
         telemetry.addData("Status", "Initialized");
     }
