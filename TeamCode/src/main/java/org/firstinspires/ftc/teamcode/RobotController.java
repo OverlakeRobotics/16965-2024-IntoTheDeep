@@ -305,6 +305,9 @@ public class RobotController {
         double deltaX = deltaStrafe * cosH - deltaForward * sinH;
         double deltaY = deltaStrafe * sinH + deltaForward * cosH;
 
+        robot.telemetry.addData("Delta x", deltaX);
+        robot.telemetry.addData("Delta y", deltaY);
+
         xPos += deltaX;
         yPos -= deltaY;
 
@@ -417,11 +420,11 @@ public class RobotController {
                 move(speed, 0.0, 0.0, headingCorrectionPower);
             }
 
-            if (distanceToDestinationInches < 1) {
+            if (distanceToDestinationInches < 0.75) {
                 done = true;
-            } else {
-                return false;
             }
+        } else {
+            done = true;
         }
 
         if (done) {
@@ -432,7 +435,7 @@ public class RobotController {
             frontLeft.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
             frontRight.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         }
-        return true;
+        return done;
     }
 
     // TODO: Find exact values for distance and implement it in COUNTS_PER_INCH to make this method precise.
@@ -513,7 +516,7 @@ public class RobotController {
                 move(speed, 0.0, 0.0, headingCorrectionPower);
             }
 
-            if (distanceToDestinationInches < 1) {
+            if (distanceToDestinationInches < 0.75) {
                 break;
             }
         }
@@ -555,7 +558,7 @@ public class RobotController {
         }
 
         double distance = Math.sqrt(Math.pow(wantedX - xPos, 2) + Math.pow(wantedY - yPos, 2));
-        while (distance > MIN_DIST_TO_STOP && robot.opModeIsActive()) {
+        while ((distance > MIN_DIST_TO_STOP || Math.abs(getAngleImuDegrees() - wantedHeading) > 3.5) && robot.opModeIsActive()) {
             wantedHeading = wantedH;
 
             double dy = wantedY - yPos;
@@ -569,7 +572,7 @@ public class RobotController {
 
             double forward = -speed * Math.sqrt(distance) * Math.cos((moveDirection - Math.toRadians(hPos))) / 2;
             double strafe = speed * Math.sqrt(distance) * Math.sin((moveDirection - Math.toRadians(hPos))) / 2;
-            move(forward, strafe, 0.0, DEFAULT_HEADING_CORRECTION_POWER / 2);
+            move(forward, strafe, 0.0, DEFAULT_HEADING_CORRECTION_POWER);
 
             distance = Math.sqrt(Math.pow(wantedX - xPos, 2) + Math.pow(wantedY - yPos, 2));
         }

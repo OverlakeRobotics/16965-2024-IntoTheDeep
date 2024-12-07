@@ -54,7 +54,9 @@ public class MecanumDriver extends OpMode {
     private final static double TURN_POWER = 2.3;
     private final static double FORWARD_POWER = 1.0;
     private final static int VIPER_VELOCITY_CONSTANT = 1800;
+    private final static int VIPER_START_VELOCITY = 200;
     private final static double MAX_VIPER_POWER = 0.75;
+    private final static double VIPER_START_POWER = 0.15;
     private final static double BASE_PIVOT_VELOCITY = 240;
     private final static double MAX_PIVOT_VELOCITY = 840;
     private final static double PIVOT_RAMP_TIME = 0.5;
@@ -90,6 +92,7 @@ public class MecanumDriver extends OpMode {
     private double bMacroStartedTime;
     private boolean bMacroActivated = false;
     private ExponentialRamp ramp;
+    private LogarithmicRamp rampManual;
     private boolean viperRamping = false;
     private int viperTargetPosition;
     private boolean hasViperManualStarted = false;
@@ -194,7 +197,7 @@ public class MecanumDriver extends OpMode {
         double triggerPower = gamepad2.left_trigger - gamepad2.right_trigger;
         if (triggerPower > 0 && !hasViperManualStarted) {
             hasViperManualStarted = true;
-            ramp = new ExponentialRamp(new Point(runtime.seconds(), viperSlide.getVelocity()), new Point(runtime.seconds() + VIPER_RAMP_TIME_SECONDS, VIPER_VELOCITY_CONSTANT));
+            rampManual = new LogarithmicRamp(new Point(runtime.seconds(), VIPER_START_VELOCITY), new Point(runtime.seconds() + VIPER_RAMP_TIME_SECONDS, VIPER_VELOCITY_CONSTANT));
             viperManualDoneRamping = false;
         }
         else if (triggerPower == 0) hasViperManualStarted = false;
@@ -202,7 +205,7 @@ public class MecanumDriver extends OpMode {
         if (triggerPower > 0 && maxViperExtension - viperSlide.getCurrentPositionInches() > 0.5) {
             if (viperSlide.getCurrentPositionInches() < maxViperExtension) {
                 int currentVelocity = VIPER_VELOCITY_CONSTANT;
-                if (!viperManualDoneRamping) currentVelocity = (int) ramp.scale(runtime.seconds());
+                if (!viperManualDoneRamping) currentVelocity = (int) rampManual.scaleX(runtime.seconds());
                 viperSlide.move(triggerPower * currentVelocity);
                 if (currentVelocity >= VIPER_VELOCITY_CONSTANT) {
                     viperManualDoneRamping = true;
@@ -213,7 +216,7 @@ public class MecanumDriver extends OpMode {
             isSpecimenReady = false;
         } else if (triggerPower < 0) {
             int currentVelocity = VIPER_VELOCITY_CONSTANT;
-            if (!viperManualDoneRamping) currentVelocity = (int) ramp.scale(runtime.seconds());
+            if (!viperManualDoneRamping) currentVelocity = (int) rampManual.scaleX(runtime.seconds());
             viperSlide.move(triggerPower * currentVelocity);
             if (currentVelocity >= VIPER_VELOCITY_CONSTANT) {
                 viperManualDoneRamping = true;
@@ -253,7 +256,7 @@ public class MecanumDriver extends OpMode {
             pivot.setTargetPosition(207);
             hingeDegree = 157;
             viperTargetPosition = 292;
-            ramp = new ExponentialRamp(new Point(runtime.seconds(), viperSlide.getPower()), new Point(runtime.seconds() + VIPER_RAMP_TIME_SECONDS, MAX_VIPER_POWER));
+            ramp = new ExponentialRamp(new Point(runtime.seconds(), VIPER_START_POWER), new Point(runtime.seconds() + VIPER_RAMP_TIME_SECONDS, MAX_VIPER_POWER));
             isPickupSubReady = false;
             isSpecimenReady = false;
             isHingeDownReady = false;
@@ -265,7 +268,7 @@ public class MecanumDriver extends OpMode {
             if (!isSpecimenReady) {
                 pivot.setTargetPosition(PIVOT_PLACE_SPECIMEN);
                 viperTargetPosition = VIPER_PLACE_SPECIMEN;
-                ramp = new ExponentialRamp(new Point(runtime.seconds(), viperSlide.getPower()), new Point(runtime.seconds() + VIPER_RAMP_TIME_SECONDS, MAX_VIPER_POWER));
+                ramp = new ExponentialRamp(new Point(runtime.seconds(), VIPER_START_POWER), new Point(runtime.seconds() + VIPER_RAMP_TIME_SECONDS, MAX_VIPER_POWER));
                 viperRamping = true;
 //                hingeDegree = 0;
                 hingeDegree = 99;
@@ -275,7 +278,7 @@ public class MecanumDriver extends OpMode {
             } else {
 //                viperSlide.setTargetPosition(VIPER_PLACE_SPECIMEN - 200);
                 viperTargetPosition = ViperSlide.MIN_POSITION + 50;
-                ramp = new ExponentialRamp(new Point(runtime.seconds(), viperSlide.getPower()), new Point(runtime.seconds() + VIPER_RAMP_TIME_SECONDS, MAX_VIPER_POWER));
+                ramp = new ExponentialRamp(new Point(runtime.seconds(), VIPER_START_POWER), new Point(runtime.seconds() + VIPER_RAMP_TIME_SECONDS, MAX_VIPER_POWER));
                 viperRamping = true;
                 placeSpecimenStartTime = runtime.seconds();
                 placingSpecimen = true;
@@ -306,7 +309,7 @@ public class MecanumDriver extends OpMode {
 
         if (bMacroActivated && runtime.seconds() - bMacroStartedTime >= 0.25) {
             viperTargetPosition = ViperSlide.MIN_POSITION + 50;
-            ramp = new ExponentialRamp(new Point(runtime.seconds(), viperSlide.getPower()), new Point(runtime.seconds() + VIPER_RAMP_TIME_SECONDS, MAX_VIPER_POWER));
+            ramp = new ExponentialRamp(new Point(runtime.seconds(), VIPER_START_POWER), new Point(runtime.seconds() + VIPER_RAMP_TIME_SECONDS, MAX_VIPER_POWER));
             viperRamping = true;
             bMacroActivated = false;
         }
@@ -315,7 +318,7 @@ public class MecanumDriver extends OpMode {
         if (gamepad2.x != lastXButton && gamepad2.x) {
             if (!isPickupSubReady && !isHingeDownReady && !isRetractVipersReady) {
                 viperTargetPosition = ViperSlide.MIN_POSITION + 50;
-                ramp = new ExponentialRamp(new Point(runtime.seconds(), viperSlide.getPower()), new Point(runtime.seconds() + VIPER_RAMP_TIME_SECONDS, MAX_VIPER_POWER));
+                ramp = new ExponentialRamp(new Point(runtime.seconds(), VIPER_START_POWER), new Point(runtime.seconds() + VIPER_RAMP_TIME_SECONDS, MAX_VIPER_POWER));
                 viperRamping = true;
                 pivot.setAngleDegrees(15);
                 hingeDegree = 90;
@@ -342,7 +345,7 @@ public class MecanumDriver extends OpMode {
         if (gamepad2.y) {
             pivot.setAngleDegrees(95);
             viperTargetPosition = ViperSlide.MAX_POSITION;
-            ramp = new ExponentialRamp(new Point(runtime.seconds(), viperSlide.getPower()), new Point(runtime.seconds() + VIPER_RAMP_TIME_SECONDS, MAX_VIPER_POWER));
+            ramp = new ExponentialRamp(new Point(runtime.seconds(), VIPER_START_POWER), new Point(runtime.seconds() + VIPER_RAMP_TIME_SECONDS, MAX_VIPER_POWER));
             viperRamping = true;
             hingeDegree = 65;
             intake.setWristDegree(0);
@@ -368,7 +371,7 @@ public class MecanumDriver extends OpMode {
         lastXButton = gamepad2.x;
 
         if (viperRamping) {
-            double power = ramp.scale(runtime.seconds());
+            double power = ramp.scaleX(runtime.seconds());
             viperSlide.setTargetPosition(viperTargetPosition, power);
             if (power >= MAX_VIPER_POWER) {
                 viperRamping = false;

@@ -19,6 +19,7 @@ public class AutoBasket extends LinearOpMode {
     private RobotController robotController;
     private final ElapsedTime runtime = new ElapsedTime();
     private final static double VIPER_MAX_POWER = 0.75;
+    private final static double VIPER_START_POWER = 0.1;
     private final static double PIVOT_POWER = 0.35;
     public static double moveSpeed = 1.5;
     public static double distance = 48;
@@ -56,15 +57,10 @@ public class AutoBasket extends LinearOpMode {
         // place the preloaded specimen
         pivot.setTargetPosition(-1277);
         intake.hingeToDegree(99);
-        robotController.distanceDriveOneTickInit(29.0, -0.0, DRIVE_SPEED, 0);
-        ramp = new ExponentialRamp(new Point(runtime.seconds(), viperSlide.getCurrentPosition()), new Point(runtime.seconds() + 0.2, VIPER_MAX_POWER));
-        while (!robotController.distanceDriveOneTick() || ramp.scale(runtime.seconds()) < VIPER_MAX_POWER) {
-            viperSlide.setTargetPosition(417, ramp.scale(runtime.seconds()));
-        }
+        rampViperAndDrive(30.0, -0.0, DRIVE_SPEED, 0, 0.1, 417);
 
         robotController.sleep(0.05);
-        viperSlide.setTargetPosition(ViperSlide.MIN_POSITION);
-        robotController.distanceDrive(3.0, 180.0, DRIVE_SPEED, 0);
+        rampViperAndDrive(3.0, 180.0, DRIVE_SPEED, 0, 0.1, ViperSlide.MIN_POSITION);
         viperSlide.waitForFinish();
         intake.largeOpen();
         robotController.sleep(0.1);
@@ -74,18 +70,17 @@ public class AutoBasket extends LinearOpMode {
 
 
 //        robotController.distanceDrive(38.5, -90.0, DRIVE_SPEED, 0);
-        robotController.aprilTagDrive(58.6, 56.3, 0, 1.0);
-
+        robotController.aprilTagDrive(58.2, 56.3, 0, 1.0);
 
         intake.setWristDegree(0);
         intake.largeOpen();
-        pivot.setTargetPosition(207);
-        intake.hingeToDegree(157);
-        viperSlide.setTargetPosition(242);
-        robotController.sleep(0.3);
-        robotController.distanceDrive(15.0, -0.0, DRIVE_SPEED - 2.65, 0);
+        pivot.setAngleDegrees(15);
+        intake.hingeToDegree(0);
         pivot.waitForFinish();
+        rampViperAndDrive(11.0, -0.0, DRIVE_SPEED - 1.5, 0, 0.2, 600);
         viperSlide.waitForFinish();
+        pivot.setAngleDegrees(0);
+        pivot.waitForFinish();
         robotController.sleep(0.1);
         intake.close();
         robotController.sleep(0.2);
@@ -93,8 +88,8 @@ public class AutoBasket extends LinearOpMode {
         // place first neutral sample in basket
         pivot.setAngleDegrees(110);
         robotController.distanceDrive(23.632, -159.444, DRIVE_SPEED, 0);
-        viperSlide.setTargetPosition(ViperSlide.MAX_POSITION);
         intake.hingeToDegree(90);
+        rampViper(0.1, ViperSlide.MAX_POSITION);
         robotController.turnTo(315.0, TURN_SPEED);
         intake.setWristDegree(0);
         viperSlide.waitForFinish();
@@ -102,47 +97,46 @@ public class AutoBasket extends LinearOpMode {
         intake.hingeToDegree(187);
         robotController.distanceDrive(7, -180.0, DRIVE_SPEED - 2, -45);
         intake.largeOpen();
-        robotController.sleep(0.2);
+        robotController.sleep(0.15);
 
         pivot.setAngleDegrees(100);
         intake.hingeToDegree(90);
         robotController.sleep(0.2);
         pivot.waitForFinish();
-        viperSlide.setTargetPosition(ViperSlide.MIN_POSITION);
-        robotController.sleep(0.2);
-        robotController.distanceDrive(7, -45, DRIVE_SPEED, -45);
+        rampViperAndDrive(7, -45, DRIVE_SPEED, -45, 0.1, ViperSlide.MIN_POSITION);
         viperSlide.waitForFinish();
         robotController.turnTo(0, TURN_SPEED);
-        robotController.distanceDrive(7.5, 45, DRIVE_SPEED, 0);
+        robotController.distanceDrive(14, 45, DRIVE_SPEED, 0);
 
         robotController.aprilTagDrive(58.6, 56.3, 0, 1.0);
 
-        robotController.distanceDrive(11, -90.0, DRIVE_SPEED);
+        robotController.distanceDrive(11.5, -90.0, DRIVE_SPEED);
 
         // pick up second neutral sample
         intake.setWristDegree(0);
         intake.largeOpen();
-        intake.hingeToDegree(157);
-        viperSlide.setTargetPosition(242);
-        pivot.setTargetPosition(207);
-        robotController.sleep(0.3);
-        robotController.distanceDrive(15.0, -0.0, DRIVE_SPEED - 2.65, 0);
+        pivot.setAngleDegrees(15);
+        intake.hingeToDegree(0);
         pivot.waitForFinish();
+        rampViperAndDrive(14.4, -0.0, DRIVE_SPEED - 1.5, 0, 0.2, ViperSlide.MIN_POSITION + 222);
         viperSlide.waitForFinish();
+        pivot.setAngleDegrees(-5);
+        pivot.waitForFinish();
+        robotController.sleep(0.1);
         intake.close();
-        robotController.sleep(0.2);
+        robotController.sleep(0.15);
 
         // place second neutral sample in basket
         pivot.setAngleDegrees(110);
         robotController.distanceDrive(21.8403, 164.0546, DRIVE_SPEED, 0);
-        viperSlide.setTargetPosition(ViperSlide.MAX_POSITION);
+        rampViper(0.1, ViperSlide.MAX_POSITION);
         intake.hingeToDegree(90);
         robotController.turnTo(315.0, TURN_SPEED);
         intake.setWristDegree(0);
         viperSlide.waitForFinish();
         robotController.sleep(0.1);
         intake.hingeToDegree(187);
-        robotController.distanceDrive(8.4853, -180.0, DRIVE_SPEED - 2, -45);
+        robotController.distanceDrive(9.5, -210.0, DRIVE_SPEED - 1.5, -45);
         intake.largeOpen();
         robotController.sleep(0.2);
 
@@ -151,7 +145,7 @@ public class AutoBasket extends LinearOpMode {
         intake.hingeToDegree(90);
         robotController.sleep(0.2);
         pivot.waitForFinish();
-        viperSlide.setTargetPosition(ViperSlide.MIN_POSITION);
+        rampViper(0.1, ViperSlide.MIN_POSITION);
         robotController.sleep(0.2);
         robotController.distanceDrive(7, -45, DRIVE_SPEED, -45);
         robotController.turnTo(0, TURN_SPEED);
@@ -231,5 +225,24 @@ public class AutoBasket extends LinearOpMode {
         robotController = new RobotController(backLeft, backRight, frontLeft, frontRight, gyro, camera, 0, 0, -180, this);
 
         telemetry.addData("Status", "Initialized");
+    }
+
+    public void rampViperAndDrive(double distance, double direction, double driveSpeed, double holdHeading, double rampTime, int viperTarget) {
+        robotController.distanceDriveOneTickInit(distance, direction, driveSpeed, holdHeading);
+        ramp = new ExponentialRamp(new Point(runtime.seconds(), Math.min(VIPER_START_POWER, VIPER_MAX_POWER)), new Point(runtime.seconds() + rampTime, VIPER_MAX_POWER));
+        while (opModeIsActive() && !robotController.distanceDriveOneTick() || ramp.scaleX(runtime.seconds()) < VIPER_MAX_POWER) {
+            viperSlide.setTargetPosition(viperTarget, ramp.scaleX(runtime.seconds()));
+        }
+    }
+
+    public void rampViper(double rampTime, int viperTarget) {
+        ramp = new ExponentialRamp(new Point(runtime.seconds(), Math.min(VIPER_START_POWER, VIPER_MAX_POWER)), new Point(runtime.seconds() + rampTime, VIPER_MAX_POWER));
+        while (opModeIsActive() && ramp.scaleX(runtime.seconds()) < VIPER_MAX_POWER) {
+            viperSlide.setTargetPosition(viperTarget, ramp.scaleX(runtime.seconds()));
+            telemetry.addData("viper power", viperSlide.getPower());
+            telemetry.addData("wanted power", ramp.scaleX(runtime.seconds()));
+            telemetry.addData("viper position", viperSlide.getCurrentPosition());
+            telemetry.update();
+        }
     }
 }

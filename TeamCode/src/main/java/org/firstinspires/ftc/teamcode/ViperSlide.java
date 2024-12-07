@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
@@ -149,12 +150,12 @@ public class ViperSlide {
         rightMotor.setTargetPosition(position);
 
         // Only change mode and power if not already in RUN_TO_POSITION
-        if (leftMotor.getMode() != DcMotorEx.RunMode.RUN_TO_POSITION) {
+        if (leftMotor.getMode() != DcMotor.RunMode.RUN_TO_POSITION) {
             leftMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
             rightMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
-            leftMotor.setPower(power);
-            rightMotor.setPower(power);
         }
+        leftMotor.setPower(power);
+        rightMotor.setPower(power);
         currentState = SlideState.HOLDING;
         return true;
     }
