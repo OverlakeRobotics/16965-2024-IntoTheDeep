@@ -40,6 +40,10 @@ import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
 @Config
 @TeleOp(name="Mecanum Driver", group="TeleOp")
@@ -96,7 +100,7 @@ public class MecanumDriver extends OpMode {
     private boolean viperRamping = false;
     private int viperTargetPosition;
     private boolean hasViperManualStarted = false;
-    private boolean viperManualDoneRamping = false;
+    private boolean viperManualDoneRamping = true;
 
     @Override
     public void init() {
@@ -124,7 +128,12 @@ public class MecanumDriver extends OpMode {
         );
         intake = new Intake(hardwareMap);
         WebcamName camera = hardwareMap.get(WebcamName.class, "Webcam 1");
-        robotController = new RobotController(backLeft, backRight, frontLeft, frontRight, gyro, camera, 0, 0, -180);
+
+        Position cameraPosition = new Position(DistanceUnit.INCH,
+                -7, 5.6, 7, 0);
+        YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,
+                -90, -82, 14, 0);
+        robotController = new RobotController(backLeft, backRight, frontLeft, frontRight, gyro, camera, 0, 0, -180, cameraPosition, cameraOrientation);
 
         telemetry.addData("Status", "Initialized");
     }
@@ -136,9 +145,10 @@ public class MecanumDriver extends OpMode {
     @Override
     public void start() {
         runtime.reset();
-        pivot.setAngleDegrees(10);
-        pivot.waitForFinish();
-        viperSlide.setTargetPosition(ViperSlide.MIN_POSITION);
+        if (pivot.getAngleDegrees() < 10) {
+            pivot.setAngleDegrees(10);
+            pivot.waitForFinish();
+        }
         intake.close();
         intake.hingeToDegree(hingeDegree);
     }
@@ -177,11 +187,11 @@ public class MecanumDriver extends OpMode {
             }
             isSpecimenReady = false;
         } else if (gamepad2.dpad_up) {
-            if (pivot.getAngleDegrees() > 90) {
-                pivot.setAngleDegrees(90);
+//            if (pivot.getAngleDegrees() > 90) {
+//                pivot.setAngleDegrees(90);
 //            } else if (viperSlide.getCurrentPositionInches() > maxViperExtension && !Double.isNaN(pivotAngleLimit)) {
 //                pivot.setAngleDegrees(pivotAngleLimit);
-            } else if (!pivotStarted) {
+            /*} else */if (!pivotStarted) {
                 pivotStartedTime = runtime.seconds();
                 pivotStarted = true;
                 pivot.move(-pivotPower);
@@ -247,16 +257,22 @@ public class MecanumDriver extends OpMode {
 
         // Pickup Specimen Macro
         if (gamepad2.left_bumper) {
-//            pivot.setAngleDegrees(180);
-//            viperSlide.setTargetPosition(VIPER_PICKUP_SPECIMEN);
-//            intake.setWristDegree(180);
-//            hingeDegree = 90;
+////            pivot.setAngleDegrees(180);
+////            viperSlide.setTargetPosition(VIPER_PICKUP_SPECIMEN);
+////            intake.setWristDegree(180);
+////            hingeDegree = 90;
+//            intake.setWristDegree(0);
+//            intake.largeOpen();
+//            pivot.setTargetPosition(207);
+//            hingeDegree = 157;
+//            viperTargetPosition = 292;
+            pivot.setAngleDegrees(210);
             intake.setWristDegree(0);
             intake.largeOpen();
-            pivot.setTargetPosition(207);
-            hingeDegree = 157;
-            viperTargetPosition = 292;
+            hingeDegree = 75;
+            viperTargetPosition = ViperSlide.MIN_POSITION + 20;
             ramp = new ExponentialRamp(new Point(runtime.seconds(), VIPER_START_POWER), new Point(runtime.seconds() + VIPER_RAMP_TIME_SECONDS, MAX_VIPER_POWER));
+            viperRamping = true;
             isPickupSubReady = false;
             isSpecimenReady = false;
             isHingeDownReady = false;
@@ -266,21 +282,27 @@ public class MecanumDriver extends OpMode {
         // Place Specimen Macro
         if (gamepad2.right_bumper != lastRightBumper && gamepad2.right_bumper) {
             if (!isSpecimenReady) {
-                pivot.setTargetPosition(PIVOT_PLACE_SPECIMEN);
-                viperTargetPosition = VIPER_PLACE_SPECIMEN;
+//                pivot.setTargetPosition(PIVOT_PLACE_SPECIMEN);
+//                viperTargetPosition = VIPER_PLACE_SPECIMEN;
+//                ramp = new ExponentialRamp(new Point(runtime.seconds(), VIPER_START_POWER), new Point(runtime.seconds() + VIPER_RAMP_TIME_SECONDS, MAX_VIPER_POWER));
+//                viperRamping = true;
+////                hingeDegree = 0;
+//                hingeDegree = 99;
+////                intake.setWristDegree(0);
+//                intake.setWristDegree(-81);
+//                isSpecimenReady = true;
+                pivot.setAngleDegrees(100);
+                viperTargetPosition = 1600;
+                hingeDegree = -30;
                 ramp = new ExponentialRamp(new Point(runtime.seconds(), VIPER_START_POWER), new Point(runtime.seconds() + VIPER_RAMP_TIME_SECONDS, MAX_VIPER_POWER));
-                viperRamping = true;
-//                hingeDegree = 0;
-                hingeDegree = 99;
-//                intake.setWristDegree(0);
-                intake.setWristDegree(-81);
                 isSpecimenReady = true;
+                viperRamping = true;
             } else {
 //                viperSlide.setTargetPosition(VIPER_PLACE_SPECIMEN - 200);
-                viperTargetPosition = ViperSlide.MIN_POSITION + 50;
+                viperTargetPosition = 1950;
                 ramp = new ExponentialRamp(new Point(runtime.seconds(), VIPER_START_POWER), new Point(runtime.seconds() + VIPER_RAMP_TIME_SECONDS, MAX_VIPER_POWER));
                 viperRamping = true;
-                placeSpecimenStartTime = runtime.seconds();
+//                placeSpecimenStartTime = runtime.seconds();
                 placingSpecimen = true;
                 isSpecimenReady = false;
             }

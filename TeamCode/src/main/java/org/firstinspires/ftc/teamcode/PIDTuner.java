@@ -10,12 +10,14 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+
 @Config
 @Autonomous(name="PID Tuner", group="Robot")
 public class PIDTuner extends LinearOpMode {
     public static double DRIVE_SPEED = 2.7 + 0.75;
     public static double TURN_SPEED = 1.5;
-    private OldRobotController robotController;
+    private RobotController robotController;
     private final ElapsedTime runtime = new ElapsedTime();
     private final static double VIPER_POWER = 0.75;
     private final static double PIVOT_POWER = 0.35;
@@ -61,7 +63,8 @@ public class PIDTuner extends LinearOpMode {
                 hardwareMap.get(DcMotorEx.class, "PIVOTRIGHT")
         );
         intake = new Intake(hardwareMap);
-        robotController = new OldRobotController(backLeft, backRight, frontLeft, frontRight, gyro, photoSensor,this);
+        WebcamName camera = hardwareMap.get(WebcamName.class, "Webcam 1");
+        robotController = new RobotController(backLeft, backRight, frontLeft, frontRight, gyro, camera, 0, 0, -180, this);
 
         telemetry.addData("Status", "Initialized");
     }

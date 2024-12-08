@@ -98,6 +98,7 @@ public class RobotController {
     private double holdHeading;
     private double speed;
     private double direction;
+    private int currentAprilTagID;
 
 
     // Create the controller with all the motors needed to control the robot. If another motor,
@@ -105,7 +106,8 @@ public class RobotController {
     public RobotController(DcMotorEx backLeft, DcMotorEx backRight,
                            DcMotorEx frontLeft, DcMotorEx frontRight,
                            IMU gyro, WebcamName camera, double startX,
-                           double startY, double startH, LinearOpMode robot) {
+                           double startY, double startH, Position cameraOffset,
+                           YawPitchRollAngles cameraAngles, LinearOpMode robot) {
 
         backLeft.setDirection(DcMotorEx.Direction.FORWARD);
         backRight.setDirection(DcMotorEx.Direction.REVERSE);
@@ -132,7 +134,7 @@ public class RobotController {
                 //.setTagFamily(AprilTagProcessor.TagFamily.TAG_36h11)
                 //.setTagLibrary(AprilTagGameDatabase.getCenterStageTagLibrary())
                 //.setOutputUnits(DistanceUnit.INCH, AngleUnit.DEGREES)
-                .setCameraPose(cameraPosition, cameraOrientation)
+                .setCameraPose(cameraOffset, cameraAngles)
 
                 // == CAMERA CALIBRATION ==
                 // If you do not manually specify calibration parameters, the SDK will attempt
@@ -183,6 +185,20 @@ public class RobotController {
         frontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         gyro.resetYaw();
+    }
+
+    public RobotController(DcMotorEx backLeft, DcMotorEx backRight,
+                           DcMotorEx frontLeft, DcMotorEx frontRight,
+                           IMU gyro, WebcamName camera, double startX,
+                           double startY, double startH, LinearOpMode robot) {
+        this(backLeft, backRight, frontLeft, frontRight, gyro, camera, startX, startY, startH, cameraPosition, cameraOrientation, robot);
+    }
+
+    public RobotController(DcMotorEx backLeft, DcMotorEx backRight,
+                           DcMotorEx frontLeft, DcMotorEx frontRight,
+                           IMU gyro, WebcamName camera, double startX,
+                           double startY, double startH, Position cameraOffset, YawPitchRollAngles cameraAngles) {
+        this(backLeft, backRight, frontLeft, frontRight, gyro, camera, startX, startY, startH, cameraOffset, cameraAngles, null);
     }
 
     // Overloaded constructor to create the robot controller without a LinearOpMode.
@@ -305,9 +321,6 @@ public class RobotController {
         double deltaX = deltaStrafe * cosH - deltaForward * sinH;
         double deltaY = deltaStrafe * sinH + deltaForward * cosH;
 
-        robot.telemetry.addData("Delta x", deltaX);
-        robot.telemetry.addData("Delta y", deltaY);
-
         xPos += deltaX;
         yPos -= deltaY;
 
@@ -336,8 +349,13 @@ public class RobotController {
                 xPos = detection.robotPose.getPosition().x;
                 yPos = detection.robotPose.getPosition().y;
                 hPos = detection.robotPose.getOrientation().getYaw(AngleUnit.DEGREES);
+                currentAprilTagID = detection.id;
             }
         }
+    }
+
+    public int getCurrentAprilTagID() {
+        return currentAprilTagID;
     }
 
     public void distanceDriveOneTickInit(double distance, double direction, double speed, double holdHeading, boolean isFieldCentric) {
@@ -506,7 +524,7 @@ public class RobotController {
             robot.telemetry.addData("Current Action", "Distance Driving");
             robot.telemetry.addData("Distance To Target", distanceToDestination * moveCountMult);
             robot.telemetry.addData("", "");
-            double headingCorrectionPower = 0.9 * speed;
+            double headingCorrectionPower = 0.7 * speed;
             if (speed < 2.0) {
                 headingCorrectionPower = 0;
             }

@@ -70,7 +70,11 @@ public class AutoBasket extends LinearOpMode {
 
 
 //        robotController.distanceDrive(38.5, -90.0, DRIVE_SPEED, 0);
-        robotController.aprilTagDrive(58.2, 56.3, 0, 1.0);
+        if (robotController.getCurrentAprilTagID() == 13) {
+            robotController.aprilTagDrive(58.2, 56.3, 0, 1.0);
+        } else {
+            robotController.aprilTagDrive(-58.2, -56.3, 0, 1.0);
+        }
 
         intake.setWristDegree(0);
         intake.largeOpen();
@@ -108,7 +112,11 @@ public class AutoBasket extends LinearOpMode {
         robotController.turnTo(0, TURN_SPEED);
         robotController.distanceDrive(14, 45, DRIVE_SPEED, 0);
 
-        robotController.aprilTagDrive(58.6, 56.3, 0, 1.0);
+        if (robotController.getCurrentAprilTagID() == 13) {
+            robotController.aprilTagDrive(58.6, 56.3, 0, 1.0);
+        } else {
+            robotController.aprilTagDrive(-58.6, -56.3, 0, 1.0);
+        }
 
         robotController.distanceDrive(11.5, -90.0, DRIVE_SPEED);
 
