@@ -12,8 +12,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 
 @Config
-@Autonomous(name="Auto Basket", group="Robot")
-public class AutoBasket extends LinearOpMode {
+@Autonomous(name="Auto Basket 1 Specimen 2 Sample", group="Robot")
+public class AutoBasket1Specimen2Sample extends LinearOpMode {
     public static final double DRIVE_SPEED = 2.7 + 0.75;
     public static final double TURN_SPEED = 1.5;
     private RobotController robotController;
@@ -108,7 +108,6 @@ public class AutoBasket extends LinearOpMode {
         robotController.sleep(0.2);
         pivot.waitForFinish();
         rampViperAndDrive(7, -45, DRIVE_SPEED, -45, 0.1, ViperSlide.MIN_POSITION);
-        viperSlide.waitForFinish();
         robotController.turnTo(0, TURN_SPEED);
         robotController.distanceDrive(14, 45, DRIVE_SPEED, 0);
 
@@ -153,9 +152,7 @@ public class AutoBasket extends LinearOpMode {
         intake.hingeToDegree(90);
         robotController.sleep(0.2);
         pivot.waitForFinish();
-        rampViper(0.1, ViperSlide.MIN_POSITION);
-        robotController.sleep(0.2);
-        robotController.distanceDrive(7, -45, DRIVE_SPEED, -45);
+        rampViperAndDrive(7, -45, DRIVE_SPEED, -45, 0.1, ViperSlide.MIN_POSITION);
         robotController.turnTo(0, TURN_SPEED);
 //        robotController.distanceDrive(64.622, 21.8014, DRIVE_SPEED, 0);
 

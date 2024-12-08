@@ -101,6 +101,7 @@ public class MecanumDriver extends OpMode {
     private int viperTargetPosition;
     private boolean hasViperManualStarted = false;
     private boolean viperManualDoneRamping = true;
+    private boolean isInSpecimenPickupMacro = false;
 
     @Override
     public void init() {
@@ -165,8 +166,8 @@ public class MecanumDriver extends OpMode {
         telemetry.addData("Viper Extension Beyond Chassis", extensionBeyondChassis);
 
         double pivotPower = Math.min(MAX_PIVOT_VELOCITY, BASE_PIVOT_VELOCITY + (MAX_PIVOT_VELOCITY - BASE_PIVOT_VELOCITY) * (runtime.seconds() - pivotStartedTime) / PIVOT_RAMP_TIME);
-        double maxViperExtension = 24;
-        if (hingeDegree > 15) maxViperExtension = 18;
+        double maxViperExtension = 19; // reduced by 5, change as necessary
+        if (hingeDegree > 15) maxViperExtension = 13;
         if (pivot.getAngleDegrees() > 70) maxViperExtension = (double) ViperSlide.MAX_POSITION / ViperSlide.MOVE_COUNTS_PER_INCH;
 //        double maxViperExtension = Math.abs((MAX_HORIZONTAL_SIZE - ViperSlide.CHASSIS_TO_PIVOT_LENGTH) / Math.cos(Math.toRadians(pivot.getAngleDegrees()))) - ViperSlide.BASE_ARM_LENGTH;
         //double pivotAngleLimit = Math.toDegrees(Math.acos((MAX_HORIZONTAL_SIZE - ViperSlide.CHASSIS_TO_PIVOT_LENGTH) / (viperSlide.getCurrentPositionInches() + ViperSlide.BASE_ARM_LENGTH)));
@@ -174,7 +175,7 @@ public class MecanumDriver extends OpMode {
 //        telemetry.addData("Pivot Angle Limit", pivotAngleLimit);
 //        if (pivot.getAngleDegrees() < 0) pivotAngleLimit = -pivotAngleLimit;
         // Pivot
-        if (gamepad2.dpad_down) {
+        if (gamepad2.dpad_down && !(viperSlide.getCurrentPositionInches() > 19 && pivot.getAngleDegrees() <= 70)) {
 //            if (viperSlide.getCurrentPositionInches() > maxViperExtension && !Double.isNaN(pivotAngleLimit)) {
 //                pivot.setAngleDegrees(pivotAngleLimit);
 //            } else
@@ -187,11 +188,9 @@ public class MecanumDriver extends OpMode {
             }
             isSpecimenReady = false;
         } else if (gamepad2.dpad_up) {
-//            if (pivot.getAngleDegrees() > 90) {
-//                pivot.setAngleDegrees(90);
-//            } else if (viperSlide.getCurrentPositionInches() > maxViperExtension && !Double.isNaN(pivotAngleLimit)) {
-//                pivot.setAngleDegrees(pivotAngleLimit);
-            /*} else */if (!pivotStarted) {
+            if (pivot.getAngleDegrees() > 90 && !isInSpecimenPickupMacro) {
+                pivot.setAngleDegrees(90);
+            } else if (!pivotStarted) {
                 pivotStartedTime = runtime.seconds();
                 pivotStarted = true;
                 pivot.move(-pivotPower);
@@ -212,7 +211,7 @@ public class MecanumDriver extends OpMode {
         }
         else if (triggerPower == 0) hasViperManualStarted = false;
         // Viper
-        if (triggerPower > 0 && maxViperExtension - viperSlide.getCurrentPositionInches() > 0.5) {
+        if (triggerPower > 0 && maxViperExtension - viperSlide.getCurrentPositionInches() > 0.5 && !isInSpecimenPickupMacro) {
             if (viperSlide.getCurrentPositionInches() < maxViperExtension) {
                 int currentVelocity = VIPER_VELOCITY_CONSTANT;
                 if (!viperManualDoneRamping) currentVelocity = (int) rampManual.scaleX(runtime.seconds());
@@ -224,7 +223,7 @@ public class MecanumDriver extends OpMode {
                 viperSlide.setTargetPosition((int) (maxViperExtension * ViperSlide.MOVE_COUNTS_PER_INCH));
             }
             isSpecimenReady = false;
-        } else if (triggerPower < 0) {
+        } else if (triggerPower < 0 && !isInSpecimenPickupMacro) {
             int currentVelocity = VIPER_VELOCITY_CONSTANT;
             if (!viperManualDoneRamping) currentVelocity = (int) rampManual.scaleX(runtime.seconds());
             viperSlide.move(triggerPower * currentVelocity);
@@ -266,6 +265,7 @@ public class MecanumDriver extends OpMode {
 //            pivot.setTargetPosition(207);
 //            hingeDegree = 157;
 //            viperTargetPosition = 292;
+            isInSpecimenPickupMacro = true;
             pivot.setAngleDegrees(210);
             intake.setWristDegree(0);
             intake.largeOpen();
@@ -309,6 +309,7 @@ public class MecanumDriver extends OpMode {
             isPickupSubReady = false;
             isHingeDownReady = false;
             isRetractVipersReady = false;
+            isInSpecimenPickupMacro = false;
         }
 
         if (placingSpecimen && runtime.seconds() - placeSpecimenStartTime > 0.05 && runtime.seconds() - placeSpecimenStartTime < 0.25) {
@@ -327,6 +328,7 @@ public class MecanumDriver extends OpMode {
             isHingeDownReady = false;
             isRetractVipersReady = false;
             isSpecimenReady = false;
+            isInSpecimenPickupMacro = false;
         }
 
         if (bMacroActivated && runtime.seconds() - bMacroStartedTime >= 0.25) {
@@ -361,6 +363,7 @@ public class MecanumDriver extends OpMode {
                 isRetractVipersReady = false;
             }
             isSpecimenReady = false;
+            isInSpecimenPickupMacro = false;
         }
 
         // Place Basket Macro
@@ -375,6 +378,7 @@ public class MecanumDriver extends OpMode {
             isHingeDownReady = false;
             isRetractVipersReady = false;
             isSpecimenReady = false;
+            isInSpecimenPickupMacro = false;
         }
 
         if (gamepad2.dpad_left) {
@@ -385,6 +389,7 @@ public class MecanumDriver extends OpMode {
             isSpecimenReady = false;
         }
 
+        // needs fixing
         if (gamepad1.dpad_right && gamepad1.b) {
             viperSlide.resetEncoders();
         }
