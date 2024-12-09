@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
+import android.transition.Slide;
+
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -99,6 +101,9 @@ public class ViperSlide {
     }
 
     public void resetEncoders() {
+        leftMotor.setPower(0);
+        rightMotor.setPower(0);
+        currentState = SlideState.STOPPED;
         leftMotor.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
         rightMotor.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
         leftMotor.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);

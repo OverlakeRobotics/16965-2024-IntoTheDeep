@@ -125,7 +125,7 @@ public class AutoBasket1Specimen2Sample extends LinearOpMode {
         pivot.setAngleDegrees(15);
         intake.hingeToDegree(0);
         pivot.waitForFinish();
-        rampViperAndDrive(14.4, -0.0, DRIVE_SPEED - 1.5, 0, 0.2, ViperSlide.MIN_POSITION + 222);
+        rampViperAndDrive(13.7, -0.0, DRIVE_SPEED - 1.5, 0, 0.2, ViperSlide.MIN_POSITION + 222);
         viperSlide.waitForFinish();
         pivot.setAngleDegrees(-5);
         pivot.waitForFinish();
