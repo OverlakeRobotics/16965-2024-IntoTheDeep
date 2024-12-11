@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.arcrobotics.ftclib.controller.PIDFController;
@@ -52,15 +53,12 @@ public class RobotControllerNew {
         CONTINUOUS_DRIVE
     }
 
-    public RobotControllerNew(DcMotorEx backLeft, DcMotorEx backRight,
-                              DcMotorEx frontLeft, DcMotorEx frontRight,
-                              IMU gyro, WebcamName camera,
-                              Position cameraPosition, YawPitchRollAngles cameraOrientation) {
-        this.backLeft = backLeft;
-        this.backRight = backRight;
-        this.frontLeft = frontLeft;
-        this.frontRight = frontRight;
-        this.gyro = gyro;
+    public RobotControllerNew(HardwareMap hardwareMap, Position cameraPosition, YawPitchRollAngles cameraOrientation) {
+        this.backLeft = hardwareMap.get(DcMotorEx.class, "BACKLEFT");
+        this.backRight = hardwareMap.get(DcMotorEx.class, "BACKRIGHT");;
+        this.frontLeft = hardwareMap.get(DcMotorEx.class, "FRONTLEFT");;
+        this.frontRight = hardwareMap.get(DcMotorEx.class, "FRONTRIGHT");;
+        this.gyro = hardwareMap.get(IMU.class, "imu2");;
         this.cameraPosition = cameraPosition;
         this.cameraOrientation = cameraOrientation;
 
@@ -70,6 +68,8 @@ public class RobotControllerNew {
         frontRight.setDirection(DcMotorEx.Direction.REVERSE);
 
         gyro.resetYaw();
+
+        WebcamName camera = hardwareMap.get(WebcamName.class, "Webcam 1");
 
         aprilTag = new AprilTagProcessor.Builder()
                 .setCameraPose(cameraPosition, cameraOrientation)
@@ -110,11 +110,14 @@ public class RobotControllerNew {
         headingController.setSetPoint(holdHeading);
         headingController.reset();
 
-        double forward = Math.cos(Math.toRadians(direction));
-        double strafe = Math.sin(Math.toRadians(direction));
+        double forward = Math.cos(Math.toRadians(direction - holdHeading));
+        double strafe = Math.sin(Math.toRadians(direction - holdHeading));
 
-        int forwardCounts = (int)(forward * distance * FORWARD_COUNTS_PER_INCH);
-        int strafeCounts = (int)(strafe * distance * STRAFE_COUNTS_PER_INCH);
+        double moveCountMult = Math.sqrt(Math.pow(Math.cos(direction * (Math.PI / 180)) * (1.0 / FORWARD_COUNTS_PER_INCH), 2) +
+                Math.pow(Math.sin(direction * (Math.PI / 180)) * (1.0 / STRAFE_COUNTS_PER_INCH), 2));
+
+        int forwardCounts = (int)(forward * distance / moveCountMult);
+        int strafeCounts = (int)(strafe * distance / moveCountMult);
 
         motorTargets[0] = backLeft.getCurrentPosition() - forwardCounts + strafeCounts;
         motorTargets[1] = backRight.getCurrentPosition() - forwardCounts - strafeCounts;
@@ -146,7 +149,7 @@ public class RobotControllerNew {
                 if (isAtTargetPosition()) {
                     stop();
                 } else {
-                    double correction = headingController.calculate(getHeading());
+                    double correction = headingController.calculate(normalize(getHeading()));
                     setMotorPowers(moveSpeed, 0, correction);
                 }
                 break;
@@ -154,8 +157,8 @@ public class RobotControllerNew {
             case TURNING:
                 double angleError = normalize(targetHeading - getHeading());
                 if (Math.abs(angleError) > MAX_CORRECTION_ERROR) {
-                    double turnPower = Math.signum(angleError) * moveSpeed;
-                    setMotorPowers(0, 0, turnPower);
+                    double correction = moveSpeed * headingController.calculate(normalize(getHeading()));
+                    setMotorPowers(0, 0, correction);
                 } else {
                     stop();
                 }
@@ -180,7 +183,10 @@ public class RobotControllerNew {
                     stop();
                 }
                 break;
-
+            case IDLE:
+                double correction = moveSpeed * headingController.calculate(normalize(targetHeading - getHeading()));
+                setMotorPowers(0, 0, correction);
+                break;
             case CONTINUOUS_DRIVE:
                 // Motor powers already set in startContinuousDrive
                 break;

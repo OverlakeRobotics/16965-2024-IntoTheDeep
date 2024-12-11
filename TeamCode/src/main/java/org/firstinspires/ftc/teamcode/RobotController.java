@@ -72,6 +72,7 @@ public class RobotController {
     private static final YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,
             90, -82, 14, 0);
     private PIDController pidController;
+    private PIDController aprilTagPID;
     private double wantedHeading;
     private double currentForward;
     private double currentStrafe;
@@ -157,6 +158,8 @@ public class RobotController {
         visionPortal = builder.build();
 
         pidController = new PIDController(Kp, Ki, Kd);
+
+        aprilTagPID = new PIDController(Kp_APRIL, Ki_APRIL, Kd_APRIL);
 
         this.gyro = gyro;
         IMU.Parameters params = new IMU.Parameters(new RevHubOrientationOnRobot(RevHubOrientationOnRobot.LogoFacingDirection.LEFT, RevHubOrientationOnRobot.UsbFacingDirection.UP));
@@ -579,6 +582,8 @@ public class RobotController {
         while ((distance > MIN_DIST_TO_STOP || Math.abs(getAngleImuDegrees() - wantedHeading) > 3.5) && robot.opModeIsActive()) {
             wantedHeading = wantedH;
 
+            double currentHeading = getAngleImuDegrees();
+
             double dy = wantedY - yPos;
             double dx = wantedX - xPos;
 
@@ -588,8 +593,8 @@ public class RobotController {
             // Calculate move direction
             double moveDirection = Math.atan2(dx, dy);
 
-            double forward = -speed * Math.sqrt(distance) * Math.cos((moveDirection - Math.toRadians(hPos))) / 2;
-            double strafe = speed * Math.sqrt(distance) * Math.sin((moveDirection - Math.toRadians(hPos))) / 2;
+            double forward = -speed * aprilTagPID.calculate(yPos, wantedY) * Math.cos((moveDirection - Math.toRadians(currentHeading))) / 2;
+            double strafe = speed * (STRAFE_COUNTS_PER_INCH / FORWARD_COUNTS_PER_INCH) * aprilTagPID.calculate(xPos, wantedX) * Math.sqrt(distance) * Math.sin((moveDirection - Math.toRadians(currentHeading))) / 2;
             move(forward, strafe, 0.0, DEFAULT_HEADING_CORRECTION_POWER);
 
             distance = Math.sqrt(Math.pow(wantedX - xPos, 2) + Math.pow(wantedY - yPos, 2));
