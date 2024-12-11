@@ -10,7 +10,10 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import android.util.Log;
+
 import com.acmerobotics.dashboard.config.Config;
+import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -44,9 +47,9 @@ public class RobotController {
     public static final double INCHES_LEFT_TO_SPEED_UP = 5;
     public static final double TURN_DRIFT_TIME = 0;
     public static final double MIN_DIST_TO_STOP = 0.5;
-    public static double Kp = 0.05;
-    public static double Kd = 0.009;
-    public static double Ki = 0.0007;
+    public static double Kp = 0.045;
+    public static double Kd = 0.0043;
+    public static double Ki = 0;
     public static double Kp_APRIL = 0.05;
     public static double Kd_APRIL = 0.009;
     public static double Ki_APRIL = 0.0007;
@@ -68,7 +71,7 @@ public class RobotController {
             7, 5.6, 7, 0);
     private static final YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,
             90, -82, 14, 0);
-
+    private PIDController pidController;
     private double wantedHeading;
     private double currentForward;
     private double currentStrafe;
@@ -152,6 +155,8 @@ public class RobotController {
 
         // Build the Vision Portal, using the above settings.
         visionPortal = builder.build();
+
+        pidController = new PIDController(Kp, Ki, Kd);
 
         this.gyro = gyro;
         IMU.Parameters params = new IMU.Parameters(new RevHubOrientationOnRobot(RevHubOrientationOnRobot.LogoFacingDirection.LEFT, RevHubOrientationOnRobot.UsbFacingDirection.UP));
@@ -250,16 +255,9 @@ public class RobotController {
         if ((robot == null && currentAngularVelocity > MIN_VELOCITY_TO_SMOOTH_TURN) || turn != 0 || runtime.seconds() - turnStoppedTime < TURN_DRIFT_TIME) {
             wantedHeading = currentHeading;
         } else {
-            double error = normalize(wantedHeading - currentHeading);
-            double derivative = (error - lastError) / PIDTimer.seconds();
-            integralSum += error * PIDTimer.seconds();
-
-            double headingCorrection = -((Kp * error) + (Kd * derivative) + (Ki * integralSum));
-            headingCorrection = normalize(headingCorrection);
-            lastError = error;
-            PIDTimer.reset();
-
-            turn = headingCorrectionPower * (Double.isNaN(headingCorrection) ? 0.0 : headingCorrection);
+            turn = headingCorrectionPower * pidController.calculate(normalize(currentHeading), normalize(wantedHeading));
+            Log.d("PID Output", Double.toString(turn));
+            Log.d("Angles", normalize(currentHeading) + ", " + normalize(wantedHeading));
         }
 
         // Set fields so the robot knows what its current forward, strafe, and turn is in other methods.
@@ -272,10 +270,10 @@ public class RobotController {
             sendTelemetry();
         }
 
-        double backLeftPower = Range.clip((forward + strafe - turn) / 3, -1.0, 1.0);
-        double backRightPower = Range.clip((forward - strafe + turn) / 3, -1.0, 1.0);
-        double frontLeftPower = Range.clip((forward - strafe - turn) / 3, -1.0, 1.0);
-        double frontRightPower = Range.clip((forward + strafe + turn) / 3, -1.0, 1.0);
+        double backLeftPower = Range.clip((forward + strafe + turn) / 3, -1.0, 1.0);
+        double backRightPower = Range.clip((forward - strafe - turn) / 3, -1.0, 1.0);
+        double frontLeftPower = Range.clip((forward - strafe + turn) / 3, -1.0, 1.0);
+        double frontRightPower = Range.clip((forward + strafe - turn) / 3, -1.0, 1.0);
 
         // * 2000 to convert from power to velocity
         backLeft.setVelocity(2000 * backLeftPower);
@@ -470,7 +468,7 @@ public class RobotController {
     //                                or the field. If its field centric, the robot will always
     //                                move the same direction for the same inputted direction,
     //                                no matter what direction the robot is facing.
-    public void distanceDrive(double distance, double direction, double speed, double holdHeading, boolean isFieldCentric)
+    public void distanceDrive(double distance, double direction, double speed, double holdHeading, boolean doStoppingAndSlowing, boolean isFieldCentric)
             throws RuntimeException {
         if (robot == null) {
             throw new RuntimeException("Tried to run distanceDrive but LinearOpMode object not given!");
@@ -524,27 +522,25 @@ public class RobotController {
             robot.telemetry.addData("Current Action", "Distance Driving");
             robot.telemetry.addData("Distance To Target", distanceToDestination * moveCountMult);
             robot.telemetry.addData("", "");
-            double headingCorrectionPower = 0.7 * speed;
-            if (speed < 2.0) {
-                headingCorrectionPower = 0;
-            }
-            if (distanceToDestinationInches <= INCHES_LEFT_TO_SLOW_DOWN) {
-                move(0.01 + speed * Math.sin(distanceToDestinationInches / INCHES_LEFT_TO_SLOW_DOWN * (Math.PI / 2)), 0.0, 0.0, headingCorrectionPower);
+            if (doStoppingAndSlowing && distanceToDestinationInches <= INCHES_LEFT_TO_SLOW_DOWN) {
+                move(0.01 + speed * Math.sin(distanceToDestinationInches / INCHES_LEFT_TO_SLOW_DOWN * (Math.PI / 2)), 0.0, 0.0, DEFAULT_HEADING_CORRECTION_POWER);
             } else {
-                move(speed, 0.0, 0.0, headingCorrectionPower);
+                move(speed, 0.0, 0.0, DEFAULT_HEADING_CORRECTION_POWER);
             }
 
-            if (distanceToDestinationInches < 0.75) {
+            if (distanceToDestinationInches < 1.5) {
                 break;
             }
         }
 
-        // Stop movement and switch modes
-        move(0, 0, 0, 0);
-        backLeft.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-        backRight.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-        frontLeft.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-        frontRight.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        if (doStoppingAndSlowing) {
+            // Stop movement and switch modes
+            move(0, 0, 0, 0);
+            backLeft.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+            backRight.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+            frontLeft.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+            frontRight.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        }
     }
 
     // Behavior: Overloaded method of distanceDrive. This sets the default of isFieldCentric.
@@ -556,11 +552,15 @@ public class RobotController {
     //                          based on the direction the robot was initialized in.
     //      - double speed: The speed at which the robot will move.
     public void distanceDrive(double distance, double direction, double speed, double holdHeading) throws RuntimeException {
-        distanceDrive(distance, direction, speed, holdHeading, DEFAULT_FIELD_CENTRIC);
+        distanceDrive(distance, direction, speed, holdHeading, true, DEFAULT_FIELD_CENTRIC);
+    }
+
+    public void distanceDrive(double distance, double direction, double speed, double holdHeading, boolean doStoppingAndSlowing) throws RuntimeException {
+        distanceDrive(distance, direction, speed, holdHeading, doStoppingAndSlowing, DEFAULT_FIELD_CENTRIC);
     }
 
     public void distanceDrive(double distance, double direction, double speed) throws RuntimeException {
-        distanceDrive(distance, direction, speed, 0, DEFAULT_FIELD_CENTRIC);
+        distanceDrive(distance, direction, speed, 0, true, DEFAULT_FIELD_CENTRIC);
     }
 
     // Behavior: Drives the robot to a given position on the field relative to the starting position.
@@ -619,7 +619,7 @@ public class RobotController {
             strafe = strafePower;
         }
 
-        move(forward, strafe, turn, 0.0);
+        move(forward, strafe, -turn, 0.0);
     }
 
     // Behavior: Overloaded version of continuousDrive that sets boolean isFieldCentric to DEFAULT_FIELD_CENTRIC
@@ -654,12 +654,12 @@ public class RobotController {
     //      - double degrees: The angle to turn the robot to in degrees.
     //      - double speed: The speed at which the robot should turn.
     public void turnTo(double angle, double speed) {
-        wantedHeading = normalize(angle);
+        wantedHeading = normalize(-angle);
         while (Math.abs(normalize(getAngleImuDegrees() - wantedHeading)) > MAX_CORRECTION_ERROR && robot.opModeIsActive()) {
             robot.telemetry.addData("Current Action", "Turning To Angle");
             robot.telemetry.addData("Degrees to destination", wantedHeading - getAngleImuDegrees());
             robot.telemetry.addData("", "");
-            wantedHeading = normalize(angle);
+            wantedHeading = normalize(-angle);
             robot.telemetry.addData("Wanted Angle Turn To", angle);
             move(0, 0, 0, speed);
         }

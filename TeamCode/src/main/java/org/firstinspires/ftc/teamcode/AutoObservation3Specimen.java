@@ -45,25 +45,29 @@ public class AutoObservation3Specimen extends LinearOpMode {
         robotController.sleep(0.1);
 
         // push 2 samples into observation zone
-        robotController.distanceDrive(9.0, 180.0, DRIVE_SPEED, 0);
-        robotController.distanceDrive(28.0, 90.0, DRIVE_SPEED, 0);
-        robotController.distanceDrive(34.0, 0.0, DRIVE_SPEED, 0);
-        robotController.distanceDrive(8.5, 90.0, DRIVE_SPEED, 0);
-        robotController.distanceDrive(43.0, 180.0, DRIVE_SPEED, 0);
+        robotController.distanceDrive(7.0, 180.0, DRIVE_SPEED, 0);
+        if (robotController.getCurrentAprilTagID() == 11) {
+            robotController.aprilTagDrive(-43.4, 51.8, 0, 1.0);
+        } else {
+            robotController.aprilTagDrive(43.4, -51.8, 0, 1.0);
+        }
+        robotController.distanceDrive(27, 0.0, DRIVE_SPEED, 0, false);
+        robotController.distanceDrive(10.5, 90.0, DRIVE_SPEED, 0, false);
+        robotController.distanceDrive(38.0, 180.0, DRIVE_SPEED, 0, false);
 //        robotController.distanceDrive(47.0, -0.0, DRIVE_SPEED, 0);
 //        robotController.distanceDrive(10.5, 90.0, DRIVE_SPEED, 0);
 //        robotController.distanceDrive(47.0, 180.0, DRIVE_SPEED, 0);
 
         // prep for picking up second specimen
-        robotController.distanceDrive(22.7386, 14.0362, DRIVE_SPEED, 0);
+//        robotController.distanceDrive(22.7386, 14.0362, DRIVE_SPEED, 0);
 //        robotController.turnTo(180.0, TURN_SPEED);
-        robotController.distanceDrive(5, 180, DRIVE_SPEED, 0);
+        robotController.distanceDrive(8, 45.0, DRIVE_SPEED, 0);
 
-        if (robotController.getCurrentAprilTagID() == 11) {
-            robotController.aprilTagDrive(-56.4, 57.4, 0, 1.0);
-        } else {
-            robotController.aprilTagDrive(56.4, -57.4, 0, 1.0);
-        }
+//        if (robotController.getCurrentAprilTagID() == 11) {
+//            robotController.aprilTagDrive(-56.4, 57.4, 0, 1.0);
+//        } else {
+//            robotController.aprilTagDrive(56.4, -57.4, 0, 1.0);
+//        }
 
         // pick up the second specimen
 //        intake.setWristDegree(0);
@@ -81,7 +85,7 @@ public class AutoObservation3Specimen extends LinearOpMode {
         intake.hingeToDegree(75);
         viperSlide.setTargetPosition(ViperSlide.MIN_POSITION + 20);
         robotController.sleep(1);
-        robotController.distanceDrive(11, -180, DRIVE_SPEED - 0.5, 0.0);
+        robotController.distanceDrive(12, -180, DRIVE_SPEED - 0.5, 0.0);
         robotController.sleep(0.1);
         intake.close();
         robotController.sleep(0.3);
@@ -101,8 +105,8 @@ public class AutoObservation3Specimen extends LinearOpMode {
         viperSlide.setTargetPosition(1600);
         intake.hingeToDegree(-30);
         robotController.sleep(0.2);
-        robotController.distanceDrive(50, -74.7449, DRIVE_SPEED, 0);
-        robotController.distanceDrive(13.0, 0.0, DRIVE_SPEED, 0);
+        robotController.distanceDrive(50, -74.7449, DRIVE_SPEED, 0, false);
+        robotController.distanceDrive(15.0, 0.0, DRIVE_SPEED, 0);
         robotController.sleep(0.2);
         viperSlide.setTargetPosition(1950);
         robotController.sleep(0.5);
@@ -133,8 +137,8 @@ public class AutoObservation3Specimen extends LinearOpMode {
         intake.hingeToDegree(-30);
         robotController.sleep(0.2);
 
-        robotController.distanceDrive(46, -74.7449, DRIVE_SPEED, 0);
-        robotController.distanceDrive(14.0, 0.0, DRIVE_SPEED, 0);
+        robotController.distanceDrive(52, -80.7449, DRIVE_SPEED, 0, false);
+        robotController.distanceDrive(16.0, 0.0, DRIVE_SPEED, 0);
 
         robotController.sleep(0.2);
         viperSlide.setTargetPosition(1950);

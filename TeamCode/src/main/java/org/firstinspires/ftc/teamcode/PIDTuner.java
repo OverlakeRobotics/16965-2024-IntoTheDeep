@@ -16,7 +16,7 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 @Autonomous(name="PID Tuner", group="Robot")
 public class PIDTuner extends LinearOpMode {
     public static double DRIVE_SPEED = 2.7 + 0.75;
-    public static double TURN_SPEED = 1.5;
+    public static double TURN_SPEED = 2.0;
     private RobotController robotController;
     private final ElapsedTime runtime = new ElapsedTime();
     private final static double VIPER_POWER = 0.75;
@@ -35,7 +35,9 @@ public class PIDTuner extends LinearOpMode {
         intake.close();
 //        intake.unwhack();
         pivot.setTargetPosition(0);
+        viperSlide.setTargetPosition(100);
         robotController.sleep(2);
+//        robotController.turnTo(90, TURN_SPEED);
         robotController.distanceDrive(driveDistance, driveDirection, DRIVE_SPEED);
         robotController.sleep(100);
     }
@@ -52,15 +54,16 @@ public class PIDTuner extends LinearOpMode {
 
         IMU gyro = hardwareMap.get(IMU.class, "imu2");
 
-        SparkFunOTOS photoSensor = hardwareMap.get(SparkFunOTOS.class, "PHOTOSENSOR");
-
         viperSlide = new ViperSlide(
                 hardwareMap.get(DcMotorEx.class, "VIPERLEFT"),
-                hardwareMap.get(DcMotorEx.class, "VIPERRIGHT")
+                hardwareMap.get(DcMotorEx.class, "VIPERRIGHT"),
+                false
         );
         pivot = new Pivot(
                 hardwareMap.get(DcMotorEx.class, "PIVOTLEFT"),
-                hardwareMap.get(DcMotorEx.class, "PIVOTRIGHT")
+                hardwareMap.get(DcMotorEx.class, "PIVOTRIGHT"),
+                0,
+                false
         );
         intake = new Intake(hardwareMap);
         WebcamName camera = hardwareMap.get(WebcamName.class, "Webcam 1");
