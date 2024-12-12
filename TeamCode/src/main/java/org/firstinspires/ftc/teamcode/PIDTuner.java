@@ -15,14 +15,14 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 @Config
 @Autonomous(name="PID Tuner", group="Robot")
 public class PIDTuner extends LinearOpMode {
-    public static double DRIVE_SPEED = 2.7 + 0.75;
+    public static double DRIVE_SPEED = 1.0; // 2.7 + 0.75;
     public static double TURN_SPEED = 2.0;
     private RobotController robotController;
     private final ElapsedTime runtime = new ElapsedTime();
     private final static double VIPER_POWER = 0.75;
     private final static double PIVOT_POWER = 0.35;
     public final boolean isFieldCentric = false;
-    public static double driveDistance = 24;
+    public static double driveDistance = 72;
     public static double driveDirection = 0.0;
     private ViperSlide viperSlide;
     private Pivot pivot;
@@ -38,8 +38,8 @@ public class PIDTuner extends LinearOpMode {
         viperSlide.setTargetPosition(100);
         robotController.sleep(2);
 //        robotController.turnTo(90, TURN_SPEED);
-        robotController.distanceDrive(driveDistance, driveDirection, DRIVE_SPEED);
-        robotController.sleep(100);
+        robotController.distanceDrive(driveDistance, driveDirection, DRIVE_SPEED, 0);
+//        robotController.sleep(100);
     }
 
     public void initialize() {

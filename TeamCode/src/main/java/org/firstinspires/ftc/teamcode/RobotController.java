@@ -37,13 +37,13 @@ import java.util.List;
 public class RobotController {
     public static final boolean DEFAULT_FIELD_CENTRIC = true;
     public static final boolean DEFAULT_SEND_TELEMETRY = true;
-    public static final double FORWARD_COUNTS_PER_INCH = 43.80;
-    public static final double STRAFE_COUNTS_PER_INCH = 50.58;
+    public static double FORWARD_COUNTS_PER_INCH = 32.02250498604; // 43.80
+    public static double STRAFE_COUNTS_PER_INCH = 50.58;
     public static final double DEFAULT_HEADING_CORRECTION_POWER = 2.0;
     public static final double MAX_CORRECTION_ERROR = 1.0;
     public static final double TURN_SPEED_RAMP = 4.0;
     public static final double MIN_VELOCITY_TO_SMOOTH_TURN = 115;
-    public static final double INCHES_LEFT_TO_SLOW_DOWN = 8;
+    public static final double INCHES_LEFT_TO_SLOW_DOWN = 20;
     public static final double INCHES_LEFT_TO_SPEED_UP = 5;
     public static final double TURN_DRIFT_TIME = 0;
     public static final double MIN_DIST_TO_STOP = 0.5;
@@ -258,7 +258,7 @@ public class RobotController {
         if ((robot == null && currentAngularVelocity > MIN_VELOCITY_TO_SMOOTH_TURN) || turn != 0 || runtime.seconds() - turnStoppedTime < TURN_DRIFT_TIME) {
             wantedHeading = currentHeading;
         } else {
-            turn = headingCorrectionPower * pidController.calculate(normalize(currentHeading), normalize(wantedHeading));
+            turn = -headingCorrectionPower * pidController.calculate(normalize(currentHeading), normalize(wantedHeading));
             Log.d("PID Output", Double.toString(turn));
             Log.d("Angles", normalize(currentHeading) + ", " + normalize(wantedHeading));
         }
@@ -273,10 +273,19 @@ public class RobotController {
             sendTelemetry();
         }
 
-        double backLeftPower = Range.clip((forward + strafe + turn) / 3, -1.0, 1.0);
-        double backRightPower = Range.clip((forward - strafe - turn) / 3, -1.0, 1.0);
-        double frontLeftPower = Range.clip((forward - strafe + turn) / 3, -1.0, 1.0);
-        double frontRightPower = Range.clip((forward + strafe - turn) / 3, -1.0, 1.0);
+        double backLeftPower =(forward + strafe + turn) / 3;
+        double backRightPower = (forward - strafe - turn) / 3;
+        double frontLeftPower = (forward - strafe + turn) / 3;
+        double frontRightPower = (forward + strafe - turn) / 3;
+
+        double maxPower = Math.max(Math.max(Math.abs(backLeftPower), Math.abs(backRightPower)), Math.max(Math.abs(frontLeftPower), Math.abs(frontRightPower)));
+
+        if (maxPower > 1) {
+            backLeftPower /= maxPower;
+            backRightPower /= maxPower;
+            frontLeftPower /= maxPower;
+            frontRightPower /= maxPower;
+        }
 
         // * 2000 to convert from power to velocity
         backLeft.setVelocity(2000 * backLeftPower);
@@ -429,17 +438,15 @@ public class RobotController {
             robot.telemetry.addData("Current Action", "Distance Driving");
             robot.telemetry.addData("Distance To Target", distanceToDestination * moveCountMult);
             robot.telemetry.addData("", "");
-            double headingCorrectionPower = 0.9 * speed;
-            if (speed < 2.0) {
-                headingCorrectionPower = 0;
-            }
-            if (distanceToDestinationInches <= INCHES_LEFT_TO_SLOW_DOWN) {
-                move(0.01 + speed * Math.sin(distanceToDestinationInches / INCHES_LEFT_TO_SLOW_DOWN * (Math.PI / 2)), 0.0, 0.0, headingCorrectionPower);
-            } else {
-                move(speed, 0.0, 0.0, headingCorrectionPower);
-            }
+//            if (doStoppingAndSlowing && distanceToDestinationInches <= INCHES_LEFT_TO_SLOW_DOWN) {
+//                robot.telemetry.addData("Slowing", "down");
+//                move(0.01 + speed * distanceToDestinationInches / INCHES_LEFT_TO_SLOW_DOWN, 0.0, 0.0, distanceToDestinationInches / INCHES_LEFT_TO_SLOW_DOWN * 2 * DEFAULT_HEADING_CORRECTION_POWER);
+//            } else {
+//                move(speed, 0.0, 0.0, 2 * DEFAULT_HEADING_CORRECTION_POWER);
+//            }
+            move(speed, 0.0, 0.0, 2 * DEFAULT_HEADING_CORRECTION_POWER);
 
-            if (distanceToDestinationInches < 0.75) {
+            if (distanceToDestinationInches < 1) {
                 done = true;
             }
         } else {
@@ -525,13 +532,15 @@ public class RobotController {
             robot.telemetry.addData("Current Action", "Distance Driving");
             robot.telemetry.addData("Distance To Target", distanceToDestination * moveCountMult);
             robot.telemetry.addData("", "");
-            if (doStoppingAndSlowing && distanceToDestinationInches <= INCHES_LEFT_TO_SLOW_DOWN) {
-                move(0.01 + speed * Math.sin(distanceToDestinationInches / INCHES_LEFT_TO_SLOW_DOWN * (Math.PI / 2)), 0.0, 0.0, DEFAULT_HEADING_CORRECTION_POWER);
-            } else {
-                move(speed, 0.0, 0.0, DEFAULT_HEADING_CORRECTION_POWER);
-            }
+//            if (doStoppingAndSlowing && distanceToDestinationInches <= INCHES_LEFT_TO_SLOW_DOWN) {
+//                robot.telemetry.addData("Slowing", "down");
+//                move(0.01 + speed * distanceToDestinationInches / INCHES_LEFT_TO_SLOW_DOWN, 0.0, 0.0, distanceToDestinationInches / INCHES_LEFT_TO_SLOW_DOWN * 2 * DEFAULT_HEADING_CORRECTION_POWER);
+//            } else {
+//                move(speed, 0.0, 0.0, 2 * DEFAULT_HEADING_CORRECTION_POWER);
+//            }
+            move(speed, 0.0, 0.0, 2 * DEFAULT_HEADING_CORRECTION_POWER);
 
-            if (distanceToDestinationInches < 1.5) {
+            if (distanceToDestinationInches < 1) {
                 break;
             }
         }
@@ -666,7 +675,7 @@ public class RobotController {
             robot.telemetry.addData("", "");
             wantedHeading = normalize(-angle);
             robot.telemetry.addData("Wanted Angle Turn To", angle);
-            move(0, 0, 0, speed);
+            move(0, 0, 0, -speed);
         }
         // Stop the robot
         move(0, 0, 0, 0);
@@ -739,7 +748,7 @@ public class RobotController {
 
         double startTime = runtime.seconds();
         while (robot.opModeIsActive() && (runtime.seconds() - startTime) < time) {
-            move(0, 0, 0, 0);
+            move(0, 0, 0, -DEFAULT_HEADING_CORRECTION_POWER);
         }
 
         // Stop the robot
