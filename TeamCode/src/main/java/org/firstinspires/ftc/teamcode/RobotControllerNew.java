@@ -1,265 +1,282 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.arcrobotics.ftclib.controller.PIDFController;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
-import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
-import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
-import java.util.List;
 
-public class RobotControllerNew {
-    private final DcMotorEx backLeft;
-    private final DcMotorEx backRight;
-    private final DcMotorEx frontLeft;
-    private final DcMotorEx frontRight;
-    private final IMU gyro;
-    private final VisionPortal visionPortal;
-    private final Position cameraPosition;
-    private final YawPitchRollAngles cameraOrientation;
-    private final ElapsedTime runtime = new ElapsedTime();
-    private final AprilTagProcessor aprilTag;
-    private final PIDFController headingController;
+@Autonomous(name="Robot: Auto Drive By Gyro (Mecanum with Strafe)", group="Robot")
+public class RobotControllerNew extends LinearOpMode {
 
-    // Constants
-    private static final double FORWARD_COUNTS_PER_INCH = 43.80;
-    private static final double STRAFE_COUNTS_PER_INCH = 50.58;
-    private static final double MAX_CORRECTION_ERROR = 1.0;
-    private static final double MIN_DIST_TO_STOP = 0.5;
-    private static final double POSITION_TOLERANCE = 0.75;
-    private static final double HEADING_PID_KP = 0.05;
-    private static final double HEADING_PID_KI = 0.0007;
-    private static final double HEADING_PID_KD = 0.009;
+    private DcMotor frontLeftDrive   = null;
+    private DcMotor frontRightDrive  = null;
+    private DcMotor backLeftDrive    = null;
+    private DcMotor backRightDrive   = null;
+    private IMU     imu             = null;
 
-    // State tracking
-    private DriveState currentState = DriveState.IDLE;
-    private double targetX, targetY, targetHeading;
-    private double moveSpeed;
-    private int currentAprilTagID;
-    private final int[] motorTargets = new int[4];
-    private boolean isFieldCentric = true;
+    private double  headingError  = 0;
 
-    private enum DriveState {
-        IDLE,
-        DISTANCE_DRIVE,
-        TURNING,
-        APRIL_TAG_DRIVE,
-        CONTINUOUS_DRIVE
-    }
+    // Telemetry targets
+    private double  targetHeading = 0;
+    private double  driveSpeed    = 0;
+    private double  strafeSpeed   = 0;
+    private double  turnSpeed     = 0;
 
-    public RobotControllerNew(HardwareMap hardwareMap, Position cameraPosition, YawPitchRollAngles cameraOrientation) {
-        this.backLeft = hardwareMap.get(DcMotorEx.class, "BACKLEFT");
-        this.backRight = hardwareMap.get(DcMotorEx.class, "BACKRIGHT");;
-        this.frontLeft = hardwareMap.get(DcMotorEx.class, "FRONTLEFT");;
-        this.frontRight = hardwareMap.get(DcMotorEx.class, "FRONTRIGHT");;
-        this.gyro = hardwareMap.get(IMU.class, "imu2");;
-        this.cameraPosition = cameraPosition;
-        this.cameraOrientation = cameraOrientation;
+    // Approx counts per revolution for GoBILDA 435RPM Yellow Jacket
+    static final double     COUNTS_PER_MOTOR_REV    = 383.6;
+    static final double     DRIVE_GEAR_REDUCTION    = 1.0;
+    static final double     WHEEL_DIAMETER_INCHES   = 4.0;
+    //static final double     COUNTS_PER_INCH         = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) /
+    //        (WHEEL_DIAMETER_INCHES * Math.PI);
+    static final double FORWARD_COUNTS_PER_INCH = 32.64;
+    static final double STRAFE_COUNTS_PER_INCH = 38.89;
+    static final double COUNTS_LEFT_TO_SLOW_DOWN = 1500;
 
-        backLeft.setDirection(DcMotorEx.Direction.FORWARD);
-        backRight.setDirection(DcMotorEx.Direction.REVERSE);
-        frontLeft.setDirection(DcMotorEx.Direction.FORWARD);
-        frontRight.setDirection(DcMotorEx.Direction.REVERSE);
+    static final double     DRIVE_SPEED             = 0.8;
+    static final double     TURN_SPEED              = 0.2;
+    static final double     HEADING_THRESHOLD       = 1.0 ;
 
-        gyro.resetYaw();
+    static final double     P_TURN_GAIN             = 0.02;
+    static final double     P_DRIVE_GAIN            = 0.03;
 
-        WebcamName camera = hardwareMap.get(WebcamName.class, "Webcam 1");
+    @Override
+    public void runOpMode() {
 
-        aprilTag = new AprilTagProcessor.Builder()
-                .setCameraPose(cameraPosition, cameraOrientation)
-                .build();
+        frontLeftDrive  = hardwareMap.get(DcMotor.class, "FRONTLEFT");
+        frontRightDrive = hardwareMap.get(DcMotor.class, "FRONTRIGHT");
+        backLeftDrive   = hardwareMap.get(DcMotor.class, "BACKLEFT");
+        backRightDrive  = hardwareMap.get(DcMotor.class, "BACKRIGHT");
 
-        visionPortal = new VisionPortal.Builder()
-                .setCamera(camera)
-                .addProcessor(aprilTag)
-                .build();
+        // Set directions
+        frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
+        backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
+        frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
+        backRightDrive.setDirection(DcMotor.Direction.FORWARD);
 
-        headingController = new PIDFController(HEADING_PID_KP, HEADING_PID_KI, HEADING_PID_KD, 0);
-        headingController.setTolerance(1.0);
+        RevHubOrientationOnRobot.LogoFacingDirection logoDirection = RevHubOrientationOnRobot.LogoFacingDirection.LEFT;
+        RevHubOrientationOnRobot.UsbFacingDirection  usbDirection  = RevHubOrientationOnRobot.UsbFacingDirection.UP;
+        RevHubOrientationOnRobot orientationOnRobot = new RevHubOrientationOnRobot(logoDirection, usbDirection);
 
-    }
+        imu = hardwareMap.get(IMU.class, "imu2");
+        imu.initialize(new IMU.Parameters(orientationOnRobot));
 
-    public void setFieldCentric(boolean isFieldCentric) {
-        this.isFieldCentric = isFieldCentric;
-    }
+        // Reset encoders
+        frontLeftDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        frontRightDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        backLeftDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        backRightDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-    public void startContinuousDrive(double forward, double strafe, double turn) {
-        currentState = DriveState.CONTINUOUS_DRIVE;
+        frontLeftDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        frontRightDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        backLeftDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        backRightDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        if (isFieldCentric) {
-            double heading = getHeading();
-            double adjustedForward = forward * Math.cos(Math.toRadians(heading)) +
-                    strafe * Math.sin(Math.toRadians(heading));
-            double adjustedStrafe = -forward * Math.sin(Math.toRadians(heading)) +
-                    strafe * Math.cos(Math.toRadians(heading));
-            setMotorPowers(adjustedForward, adjustedStrafe, turn);
-        } else {
-            setMotorPowers(forward, strafe, turn);
+        // Wait for start
+        while (opModeInInit()) {
+            telemetry.addData(">", "Robot Heading = %4.0f", getHeading());
+            telemetry.update();
         }
+
+        frontLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        frontRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        backLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        backRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        imu.resetYaw();
+
+        // Example movement:
+        // Move 72 inches at moveAngle = 45 degrees while holding heading = 0
+        //driveStraight(DRIVE_SPEED, 96, 0.0, 0.0);
+
+        // Turn to heading 180 degrees
+        //turnToHeading(TURN_SPEED, 180);
+
+        // Move 72 inches at moveAngle = 135 degrees while holding heading = 180
+        driveStraight(DRIVE_SPEED, 24, -90, 0.0);
+        //driveStraight(DRIVE_SPEED, 96, 180, 0.0);
+        //driveStraight(DRIVE_SPEED, 96, 90, 0.0);
+
+        telemetry.addData("Path", "Complete");
+        telemetry.update();
+        sleep(1000);
     }
 
-    public void startDistanceDrive(double distance, double direction, double speed, double holdHeading) {
-        currentState = DriveState.DISTANCE_DRIVE;
-        moveSpeed = speed;
-        headingController.setSetPoint(holdHeading);
-        headingController.reset();
+    /**
+     * Drive a given distance in a specified field-oriented direction (moveAngle),
+     * while maintaining a specified heading.
+     *
+     * @param maxDriveSpeed Max speed (0 to 1)
+     * @param distance Distance in inches
+     * @param moveAngle Field-oriented direction to move (in degrees, 0 = forward on field)
+     * @param heading Desired robot heading to maintain
+     */
+    public void driveStraight(double maxDriveSpeed, double distance, double moveAngle, double heading) {
+        if (!opModeIsActive()) return;
 
-        double forward = Math.cos(Math.toRadians(direction - holdHeading));
-        double strafe = Math.sin(Math.toRadians(direction - holdHeading));
+        // Convert angles to radians
+        double angleDiff = Math.toRadians(moveAngle - heading);
 
-        double moveCountMult = Math.sqrt(Math.pow(Math.cos(direction * (Math.PI / 180)) * (1.0 / FORWARD_COUNTS_PER_INCH), 2) +
-                Math.pow(Math.sin(direction * (Math.PI / 180)) * (1.0 / STRAFE_COUNTS_PER_INCH), 2));
+        // Compute local dx, dy relative to robot heading
+        double dx = distance * Math.sin(angleDiff) * STRAFE_COUNTS_PER_INCH;
+        double dy = distance * Math.cos(angleDiff) * FORWARD_COUNTS_PER_INCH;
 
-        int forwardCounts = (int)(forward * distance / moveCountMult);
-        int strafeCounts = (int)(strafe * distance / moveCountMult);
+        // Compute target increments for each wheel
+        int flTarget = frontLeftDrive.getCurrentPosition()  + (int)(dy + dx);
+        int frTarget = frontRightDrive.getCurrentPosition() + (int)(dy - dx);
+        int blTarget = backLeftDrive.getCurrentPosition()   + (int)(dy - dx);
+        int brTarget = backRightDrive.getCurrentPosition()  + (int)(dy + dx);
 
-        motorTargets[0] = backLeft.getCurrentPosition() - forwardCounts + strafeCounts;
-        motorTargets[1] = backRight.getCurrentPosition() - forwardCounts - strafeCounts;
-        motorTargets[2] = frontLeft.getCurrentPosition() - forwardCounts - strafeCounts;
-        motorTargets[3] = frontRight.getCurrentPosition() - forwardCounts + strafeCounts;
+        // Set targets
+        frontLeftDrive.setTargetPosition(flTarget);
+        frontRightDrive.setTargetPosition(frTarget);
+        backLeftDrive.setTargetPosition(blTarget);
+        backRightDrive.setTargetPosition(brTarget);
 
-        setTargetPositions(motorTargets);
-        setDrivePower(speed);
-    }
+        frontLeftDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        frontRightDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backLeftDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backRightDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-    public void startTurnTo(double angle, double speed) {
-        currentState = DriveState.TURNING;
-        targetHeading = normalize(angle);
-        moveSpeed = speed;
-    }
+        // Base drive and strafe speeds (normalized)
+        // We'll start with desired vector at full maxDriveSpeed in that direction
 
-    public void startAprilTagDrive(double x, double y, double heading, double speed) {
-        currentState = DriveState.APRIL_TAG_DRIVE;
-        targetX = x;
-        targetY = y;
-        targetHeading = heading;
-        moveSpeed = speed;
-        updateRobotPosition();
-    }
 
-    public void update() {
-        switch (currentState) {
-            case DISTANCE_DRIVE:
-                if (isAtTargetPosition()) {
-                    stop();
-                } else {
-                    double correction = headingController.calculate(normalize(getHeading()));
-                    setMotorPowers(moveSpeed, 0, correction);
-                }
-                break;
+        double rawDrive = Math.cos(angleDiff) * maxDriveSpeed;
+        double rawStrafe = Math.sin(angleDiff) * maxDriveSpeed;
 
-            case TURNING:
-                double angleError = normalize(targetHeading - getHeading());
-                if (Math.abs(angleError) > MAX_CORRECTION_ERROR) {
-                    double correction = moveSpeed * headingController.calculate(normalize(getHeading()));
-                    setMotorPowers(0, 0, correction);
-                } else {
-                    stop();
-                }
-                break;
+        // Loop while motors are running
+        while (opModeIsActive() &&
+                frontLeftDrive.isBusy() && frontRightDrive.isBusy() &&
+                backLeftDrive.isBusy() && backRightDrive.isBusy()) {
 
-            case APRIL_TAG_DRIVE:
-                updateRobotPosition();
-                double distance = Math.hypot(targetX - getX(), targetY - getY());
+            double distanceToDestination = (Math.abs(blTarget - backLeftDrive.getCurrentPosition()) +
+                    Math.abs(brTarget - backRightDrive.getCurrentPosition()) +
+                    Math.abs(flTarget - frontLeftDrive.getCurrentPosition()) +
+                    Math.abs(frTarget - frontRightDrive.getCurrentPosition())) / 4.0;
 
-                if (distance > MIN_DIST_TO_STOP) {
-                    double dx = targetX - getX();
-                    double dy = targetY - getY();
-                    double moveDirection = Math.atan2(dx, dy);
+            telemetry.addData("distance in", distanceToDestination);
 
-                    double forward = -moveSpeed * Math.sqrt(distance) *
-                            Math.cos(moveDirection - Math.toRadians(getHeading())) / 2;
-                    double strafe = moveSpeed * Math.sqrt(distance) *
-                            Math.sin(moveDirection - Math.toRadians(getHeading())) / 2;
+            double scaleFactor = Math.min(1.0, 0.2 + (distanceToDestination / COUNTS_LEFT_TO_SLOW_DOWN));
+            double drive = rawDrive * scaleFactor;
+            double strafe = rawStrafe * scaleFactor;
 
-                    setMotorPowers(forward, strafe, 0);
-                } else {
-                    stop();
-                }
-                break;
-            case IDLE:
-                double correction = moveSpeed * headingController.calculate(normalize(targetHeading - getHeading()));
-                setMotorPowers(0, 0, correction);
-                break;
-            case CONTINUOUS_DRIVE:
-                // Motor powers already set in startContinuousDrive
-                break;
-        }
-    }
 
-    private void updateRobotPosition() {
-        List<AprilTagDetection> detections = aprilTag.getDetections();
-        for (AprilTagDetection detection : detections) {
-            if (detection.id == currentAprilTagID && detection.ftcPose != null) {
-                targetX = detection.ftcPose.x;
-                targetY = detection.ftcPose.y;
-                targetHeading = detection.ftcPose.yaw;
+            // Apply heading correction
+            double turnCorrection = getSteeringCorrection(heading, P_DRIVE_GAIN);
+
+            // Combine drive/strafe/turn
+            // Might need to ensure max speed not exceeded
+            double maxMag = Math.max(Math.abs(drive) , Math.abs(strafe));
+            maxMag = Math.max(maxMag, Math.abs(turnCorrection));
+            if (maxMag > 1.0) {
+                drive /= maxMag;
+                strafe /= maxMag;
+                turnCorrection /= maxMag;
             }
+
+            moveRobot(drive, strafe, turnCorrection);
+            //sendTelemetry(true);
         }
+
+        // Stop motors and revert to RUN_USING_ENCODER
+        moveRobot(0, 0, 0);
+        frontLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        frontRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        backLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        backRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 
-    public void stop() {
-        currentState = DriveState.IDLE;
-        setMotorPowers(0, 0, 0);
+    public void turnToHeading(double maxTurnSpeed, double heading) {
+        getSteeringCorrection(heading, P_DRIVE_GAIN);
+
+        while (opModeIsActive() && (Math.abs(headingError) > HEADING_THRESHOLD)) {
+            turnSpeed = getSteeringCorrection(heading, P_TURN_GAIN);
+            turnSpeed = Range.clip(turnSpeed, -maxTurnSpeed, maxTurnSpeed);
+            moveRobot(0, 0, turnSpeed);
+            sendTelemetry(false);
+        }
+
+        moveRobot(0, 0, 0);
     }
 
-    private void setMotorPowers(double forward, double strafe, double turn) {
-        backLeft.setPower((forward + strafe - turn) / 3);
-        backRight.setPower((forward - strafe + turn) / 3);
-        frontLeft.setPower((forward - strafe - turn) / 3);
-        frontRight.setPower((forward + strafe + turn) / 3);
+    public void holdHeading(double maxTurnSpeed, double heading, double holdTime) {
+        ElapsedTime holdTimer = new ElapsedTime();
+        holdTimer.reset();
+
+        while (opModeIsActive() && (holdTimer.time() < holdTime)) {
+            turnSpeed = getSteeringCorrection(heading, P_TURN_GAIN);
+            turnSpeed = Range.clip(turnSpeed, -maxTurnSpeed, maxTurnSpeed);
+            moveRobot(0, 0, turnSpeed);
+            sendTelemetry(false);
+        }
+
+        moveRobot(0, 0, 0);
     }
 
-    private void setTargetPositions(int[] targets) {
-        backLeft.setTargetPosition(targets[0]);
-        backRight.setTargetPosition(targets[1]);
-        frontLeft.setTargetPosition(targets[2]);
-        frontRight.setTargetPosition(targets[3]);
+    public double getSteeringCorrection(double desiredHeading, double proportionalGain) {
+        targetHeading = desiredHeading;
+        headingError = targetHeading - getHeading();
+
+        while (headingError > 180)  headingError -= 360;
+        while (headingError <= -180) headingError += 360;
+
+        return -Range.clip(headingError * proportionalGain, -1, 1);
     }
 
-    private void setDrivePower(double power) {
-        backLeft.setPower(power);
-        backRight.setPower(power);
-        frontLeft.setPower(power);
-        frontRight.setPower(power);
+    /**
+     * Move the robot in mecanum style: drive (forward), strafe (right), turn (CW)
+     * Positive drive = forward
+     * Positive strafe = right
+     * Positive turn = rotate CW
+     */
+    public void moveRobot(double drive, double strafe, double turn) {
+        driveSpeed = drive;
+        strafeSpeed = strafe;
+        turnSpeed  = turn;
+
+        double fl = drive + strafe + turn;
+        double fr = drive - strafe - turn;
+        double bl = drive - strafe + turn;
+        double br = drive + strafe - turn;
+
+        // Normalize speeds if any exceed 1.0
+        double max = Math.max(Math.max(Math.abs(fl), Math.abs(fr)), Math.max(Math.abs(bl), Math.abs(br)));
+        if (max > 1.0) {
+            fl /= max;
+            fr /= max;
+            bl /= max;
+            br /= max;
+        }
+
+        frontLeftDrive.setPower(fl);
+        frontRightDrive.setPower(fr);
+        backLeftDrive.setPower(bl);
+        backRightDrive.setPower(br);
     }
 
-    private static double normalize(double degrees) {
-        while (degrees > 180) degrees -= 360;
-        while (degrees <= -180) degrees += 360;
-        return degrees;
-    }
+    private void sendTelemetry(boolean straight) {
+        if (straight) {
+            telemetry.addData("Motion", "Drive w/ Strafe");
+            telemetry.addData("FL Pos/Tgt", "%d / %d", frontLeftDrive.getCurrentPosition(), frontLeftDrive.getTargetPosition());
+            telemetry.addData("FR Pos/Tgt", "%d / %d", frontRightDrive.getCurrentPosition(), frontRightDrive.getTargetPosition());
+        } else {
+            telemetry.addData("Motion", "Turning");
+        }
 
-    public boolean isAtTargetPosition() {
-        return Math.abs(backLeft.getCurrentPosition() - motorTargets[0]) < POSITION_TOLERANCE &&
-                Math.abs(backRight.getCurrentPosition() - motorTargets[1]) < POSITION_TOLERANCE &&
-                Math.abs(frontLeft.getCurrentPosition() - motorTargets[2]) < POSITION_TOLERANCE &&
-                Math.abs(frontRight.getCurrentPosition() - motorTargets[3]) < POSITION_TOLERANCE;
-    }
-
-    public boolean isBusy() {
-        return currentState != DriveState.IDLE;
+        telemetry.addData("Heading (Target:Current)", "%5.2f : %5.0f", targetHeading, getHeading());
+        telemetry.addData("Error : Turn Pwr", "%5.1f : %5.1f", headingError, turnSpeed);
+        telemetry.addData("Drive:Strafe:Turn", "%5.2f : %5.2f : %5.2f", driveSpeed, strafeSpeed, turnSpeed);
+        telemetry.update();
     }
 
     public double getHeading() {
-        return normalize(gyro.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES));
-    }
-
-    public double getX() {
-        return targetX;
-    }
-
-    public double getY() {
-        return targetY;
-    }
-
-    public int getCurrentAprilTagID() {
-        return currentAprilTagID;
+        YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
+        return orientation.getYaw(AngleUnit.DEGREES);
     }
 }
