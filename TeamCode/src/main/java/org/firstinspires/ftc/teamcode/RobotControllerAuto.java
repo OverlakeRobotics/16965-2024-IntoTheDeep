@@ -1,5 +1,9 @@
 package org.firstinspires.ftc.teamcode;
 
+import android.util.Log;
+
+import com.acmerobotics.dashboard.config.Config;
+import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -19,6 +23,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 import java.util.List;
 
+@Config
 public class RobotControllerAuto {
 
     private static final double MIN_DIST_TO_STOP = 0.5;
@@ -33,6 +38,9 @@ public class RobotControllerAuto {
     private int currentAprilTagID;
     private final LinearOpMode robot;
     private final AprilTagProcessor aprilTag;
+    private final VisionPortal visionPortal;
+    private final PIDController aprilTagPIDStrafe;
+    private final PIDController aprilTagPIDForward;
 
     private double  headingError  = 0;
 
@@ -43,14 +51,21 @@ public class RobotControllerAuto {
     private double  turnSpeed     = 0;
     static final double FORWARD_COUNTS_PER_INCH = 32.64;
     static final double STRAFE_COUNTS_PER_INCH = 38.89;
-    static final double COUNTS_LEFT_TO_SLOW_DOWN = 1500;
+    static final int COUNTS_LEFT_TO_SLOW_DOWN = 500;
 
     static final double     DEFAULT_DRIVE_SPEED             = 0.8;
     static final double     DEFAULT_TURN_SPEED              = 0.5;
-    static final double     HEADING_THRESHOLD       = 1.0 ;
+    static final double     HEADING_THRESHOLD       = 1.0;
 
     static final double     P_TURN_GAIN             = 0.02;
     static final double     P_DRIVE_GAIN            = 0.03;
+    public static double Kp_APRIL_FORWARD = 0.08;
+    public static double Kd_APRIL_FORWARD= 0.000;
+    public static double Ki_APRIL_FORWARD = 0;
+
+    public static double Kp_APRIL_STRAFE = 0.08;
+    public static double Kd_APRIL_STRAFE= 0.001;
+    public static double Ki_APRIL_STRAFE = 0.07;
     private int lastBackLeftEncoderCount;
     private int lastBackRightEncoderCount;
     private int lastFrontLeftEncoderCount;
@@ -84,12 +99,17 @@ public class RobotControllerAuto {
         imu.initialize(new IMU.Parameters(orientationOnRobot));
         imu.resetYaw();
 
-        aprilTag = new AprilTagProcessor.Builder()
+        this.aprilTag = new AprilTagProcessor.Builder()
                 .setCameraPose(cameraOffset, cameraAngles)
                 .build();
         VisionPortal.Builder builder = new VisionPortal.Builder();
         builder.setCamera(camera);
-        builder.addProcessor(aprilTag);
+        builder.addProcessor(this.aprilTag);
+
+        visionPortal = builder.build();
+
+        aprilTagPIDStrafe = new PIDController(Kp_APRIL_STRAFE, Ki_APRIL_STRAFE, Kd_APRIL_STRAFE);
+        aprilTagPIDForward = new PIDController(Kp_APRIL_FORWARD, Ki_APRIL_FORWARD, Kd_APRIL_FORWARD);
 
         this.robot = robot;
 
@@ -108,9 +128,9 @@ public class RobotControllerAuto {
      * @param moveAngle Field-oriented direction to move (in degrees, 0 = forward on field)
      * @param heading Desired robot heading to maintain
      */
-    public void driveStraight(double distance, double moveAngle, double heading, double maxDriveSpeed) {
+    public void driveStraight(double distance, double moveAngle, double maxDriveSpeed, double heading, boolean doSlowDown) {
         if (!robot.opModeIsActive()) return;
-
+        moveAngle = normalize(-moveAngle);
         // Convert angles to radians
         double angleDiff = Math.toRadians(moveAngle - heading);
 
@@ -153,8 +173,8 @@ public class RobotControllerAuto {
                     Math.abs(frTarget - frontRightDrive.getCurrentPosition())) / 4.0;
 
             robot.telemetry.addData("distance in", distanceToDestination);
-
             double scaleFactor = Math.min(1.0, 0.2 + (distanceToDestination / COUNTS_LEFT_TO_SLOW_DOWN));
+            if (!doSlowDown) scaleFactor = 1;
             double drive = rawDrive * scaleFactor;
             double strafe = rawStrafe * scaleFactor;
 
@@ -185,7 +205,18 @@ public class RobotControllerAuto {
     }
 
     public void driveStraight(double distance, double moveAngle, double heading) {
-        driveStraight(distance, moveAngle, heading, DEFAULT_DRIVE_SPEED);
+        driveStraight(distance, moveAngle, DEFAULT_DRIVE_SPEED, heading, true);
+    }
+
+    public void driveStraight(double distance, double moveAngle, double maxDriveSpeed, double heading) {
+        driveStraight(distance, moveAngle, maxDriveSpeed, heading, true);
+    }
+
+    private static double normalize(double degrees) {
+        double normalizedAngle = degrees;
+        while (normalizedAngle > 180) normalizedAngle -= 360;
+        while (normalizedAngle <= -180) normalizedAngle += 360;
+        return normalizedAngle;
     }
 
     public void updateRobotPosition() {
@@ -228,14 +259,13 @@ public class RobotControllerAuto {
 
     public void updateRobotPositionWithApril() {
         List<AprilTagDetection> detections = aprilTag.getDetections();
-
         // Process detections that have a valid robotPose
         for (AprilTagDetection detection : detections) {
             if (detection.robotPose != null) {
                 // Get robot's position from robotPose
                 xPos = detection.robotPose.getPosition().x;
                 yPos = detection.robotPose.getPosition().y;
-                hPos = detection.robotPose.getOrientation().getYaw(AngleUnit.DEGREES);
+                hPos = getHeading();
                 currentAprilTagID = detection.id;
                 break;
             }
@@ -248,22 +278,35 @@ public class RobotControllerAuto {
 
     public void aprilTagDrive(double wantedX, double wantedY, double wantedH, double speed) throws RuntimeException {
         double distance = Math.sqrt(Math.pow(wantedX - xPos, 2) + Math.pow(wantedY - yPos, 2));
-        while ((distance > MIN_DIST_TO_STOP || Math.abs(getHeading() - wantedH) > 3.5) && robot.opModeIsActive()) {
-
+        int consecutiveCorrectIterations = 0;
+        while (consecutiveCorrectIterations < 3 && robot.opModeIsActive()) {
+            if (distance > MIN_DIST_TO_STOP || Math.abs(getHeading() - wantedH) > HEADING_THRESHOLD) {
+                consecutiveCorrectIterations = 0;
+            } else {
+                consecutiveCorrectIterations++;
+            }
             double dy = wantedY - yPos;
             double dx = wantedX - xPos;
 
             robot.telemetry.addData("dx", dx);
             robot.telemetry.addData("dy", dy);
+            robot.telemetry.update();
 
             // Calculate move direction
             double moveDirection = Math.atan2(dx, dy);
 
-            double forward = -speed * Math.sqrt(distance) * Math.cos((moveDirection - Math.toRadians(hPos))) / 2;
-            double strafe = speed * Math.sqrt(distance) * Math.sin((moveDirection - Math.toRadians(hPos))) / 2;
+            double forward = 0 * -speed * aprilTagPIDForward.calculate(yPos, wantedY);
+            double strafe = (STRAFE_COUNTS_PER_INCH / FORWARD_COUNTS_PER_INCH) * speed * aprilTagPIDStrafe.calculate(xPos, wantedX);
+            Log.d("April Tag", "forward: " + forward);
+            Log.d("April Tag", "strafe: " + strafe);
+            Log.d("April Tag", "strafe pid: " + aprilTagPIDStrafe.calculate(xPos, wantedX));
+            Log.d("April Tag", "forward pid: " + aprilTagPIDForward.calculate(yPos, wantedY));
+            Log.d("April Tag", "dx: " + dx + ", dy: " + dy);
             moveRobot(forward, strafe, getSteeringCorrection(wantedH, P_DRIVE_GAIN));
             distance = Math.sqrt(Math.pow(wantedX - xPos, 2) + Math.pow(wantedY - yPos, 2));
         }
+        aprilTagPIDForward.reset();
+        aprilTagPIDStrafe.reset();
         moveRobot(0, 0, 0);
     }
 
@@ -288,7 +331,7 @@ public class RobotControllerAuto {
         ElapsedTime holdTimer = new ElapsedTime();
         holdTimer.reset();
 
-        while (robot.opModeIsActive() && (holdTimer.time() < holdTime)) {
+        while (robot.opModeIsActive() && (holdTimer.seconds() < holdTime)) {
             turnSpeed = getSteeringCorrection(heading, P_TURN_GAIN);
             turnSpeed = Range.clip(turnSpeed, -DEFAULT_TURN_SPEED, DEFAULT_TURN_SPEED);
             moveRobot(0, 0, turnSpeed);
@@ -338,7 +381,8 @@ public class RobotControllerAuto {
         backLeftDrive.setPower(bl);
         backRightDrive.setPower(br);
 
-        updateRobotPosition();
+        updateRobotPositionWithApril();
+//        updateRobotPosition();
     }
 
     private void sendTelemetry(boolean straight) {
