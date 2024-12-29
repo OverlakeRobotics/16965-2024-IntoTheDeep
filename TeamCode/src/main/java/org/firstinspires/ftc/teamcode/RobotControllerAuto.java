@@ -179,16 +179,18 @@ public class RobotControllerAuto {
             // Apply heading correction
             double turnCorrection = getSteeringCorrection(heading, P_DRIVE_GAIN);
 
+            // Realized we don't need this as it already scales it in the moveRobot function.
             // Combine drive/strafe/turn
             // Might need to ensure max speed not exceeded
-            double maxMag = Math.max(Math.abs(drive) , Math.abs(strafe));
-            maxMag = Math.max(maxMag, Math.abs(turnCorrection));
-            if (maxMag > 1.0) {
-                drive /= maxMag;
-                strafe /= maxMag;
-                turnCorrection /= maxMag;
-            }
+//            double maxMag = Math.max(Math.abs(drive) , Math.abs(strafe));
+//            maxMag = Math.max(maxMag, Math.abs(turnCorrection));
+//            if (maxMag > 1.0) {
+//                drive /= maxMag;
+//                strafe /= maxMag;
+//                turnCorrection /= maxMag;
+//            }
 
+            // Why are we driving with any strafe power? Is this not meant to just power the robot? Wouldn't driving with strafe mess it up?
             moveRobot(drive, strafe, turnCorrection);
             sendTelemetry(true);
 
@@ -312,6 +314,71 @@ public class RobotControllerAuto {
             Log.d("April Tag", "dx: " + dx + ", dy: " + dy);
             moveRobot(forward, strafe, getSteeringCorrection(wantedH, P_DRIVE_GAIN));
             distance = Math.sqrt(Math.pow(wantedX - xPos, 2) + Math.pow(wantedY - yPos, 2));
+        }
+        moveRobot(0, 0, 0);
+    }
+
+    public void aprilTagDriveEncoders(double wantedX, double wantedY, double wantedH, double speed) throws RuntimeException {
+        double dy = wantedY - yPos;
+        double dx = wantedX - xPos;
+
+        double distance = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+        double currentHeading = getHeading();
+        double moveAngle = Math.toDegrees(Math.atan2(dx, dy));
+
+        double angleDiff = Math.toRadians(moveAngle - currentHeading);
+
+        // Compute local dx, dy relative to robot heading
+        double strafeCounts = dx * Math.sin(angleDiff) * STRAFE_COUNTS_PER_INCH;
+        double forwardCounts = dy * Math.cos(angleDiff) * FORWARD_COUNTS_PER_INCH;
+
+        // Compute target increments for each wheel
+        int flTarget = frontLeftDrive.getCurrentPosition()  + (int)(forwardCounts + strafeCounts);
+        int frTarget = frontRightDrive.getCurrentPosition() + (int)(forwardCounts - strafeCounts);
+        int blTarget = backLeftDrive.getCurrentPosition()   + (int)(forwardCounts - strafeCounts);
+        int brTarget = backRightDrive.getCurrentPosition()  + (int)(forwardCounts + strafeCounts);
+
+        frontLeftDrive.setTargetPosition(flTarget);
+        frontRightDrive.setTargetPosition(frTarget);
+        backLeftDrive.setTargetPosition(blTarget);
+        backRightDrive.setTargetPosition(brTarget);
+
+        frontLeftDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        frontRightDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backLeftDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backRightDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        int consecutiveCorrectIterations = 0;
+        while (consecutiveCorrectIterations < 3 && robot.opModeIsActive()) {
+            if (distance > MIN_DIST_TO_STOP || Math.abs(getHeading() - wantedH) > HEADING_THRESHOLD) {
+                consecutiveCorrectIterations = 0;
+            } else {
+                consecutiveCorrectIterations++;
+            }
+            dy = wantedY - yPos;
+            dx = wantedX - xPos;
+
+            currentHeading = getHeading();
+            moveAngle = Math.toDegrees(Math.atan2(dx, dy));
+
+            angleDiff = Math.toRadians(moveAngle - currentHeading);
+
+            // Compute local dx, dy relative to robot heading
+            strafeCounts = dx * Math.sin(angleDiff) * STRAFE_COUNTS_PER_INCH;
+            forwardCounts = dy * Math.cos(angleDiff) * FORWARD_COUNTS_PER_INCH;
+
+            // Compute target increments for each wheel
+            flTarget = frontLeftDrive.getCurrentPosition()  + (int)(forwardCounts + strafeCounts);
+            frTarget = frontRightDrive.getCurrentPosition() + (int)(forwardCounts - strafeCounts);
+            blTarget = backLeftDrive.getCurrentPosition()   + (int)(forwardCounts - strafeCounts);
+            brTarget = backRightDrive.getCurrentPosition()  + (int)(forwardCounts + strafeCounts);
+
+            frontLeftDrive.setTargetPosition(flTarget);
+            frontRightDrive.setTargetPosition(frTarget);
+            backLeftDrive.setTargetPosition(blTarget);
+            backRightDrive.setTargetPosition(brTarget);
+
+            distance = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
         }
         moveRobot(0, 0, 0);
     }
