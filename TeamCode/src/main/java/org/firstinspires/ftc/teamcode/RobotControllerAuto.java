@@ -135,6 +135,10 @@ public class RobotControllerAuto {
         double angleDiff = Math.toRadians(moveAngle - heading);
 
         // Compute local dx, dy relative to robot heading
+
+        // Possibly test using this to see if it works better?
+        // double strafeInches = dx * Math.cos(angleDiff) + dy * Math.sin(angleDiff)
+        // double forwardInches = -dx * Math.sin(angleDiff) + dy * Math.cos(angleDiff)
         double dx = distance * Math.sin(angleDiff) * STRAFE_COUNTS_PER_INCH;
         double dy = distance * Math.cos(angleDiff) * FORWARD_COUNTS_PER_INCH;
 
@@ -326,11 +330,14 @@ public class RobotControllerAuto {
         double currentHeading = getHeading();
         double moveAngle = Math.toDegrees(Math.atan2(dx, dy));
 
-        double angleDiff = Math.toRadians(moveAngle - currentHeading);
+        // Possibly remove normalize if it does not work?
+        double angleDiff = Math.toRadians(normalize(moveAngle - currentHeading));
 
+        // If this doesn't work go back to what is used in the driveStraight method.
+        // Maybe also mess around with negatives or swapping sines and cosines.
         // Compute local dx, dy relative to robot heading
-        double strafeCounts = dx * Math.sin(angleDiff) * STRAFE_COUNTS_PER_INCH;
-        double forwardCounts = dy * Math.cos(angleDiff) * FORWARD_COUNTS_PER_INCH;
+        double strafeCounts = (dx * Math.cos(angleDiff) + dy * Math.sin(angleDiff)) * STRAFE_COUNTS_PER_INCH;
+        double forwardCounts = (-dx * Math.sin(angleDiff) + dy * Math.cos(angleDiff)) *  FORWARD_COUNTS_PER_INCH;
 
         // Compute target increments for each wheel
         int flTarget = frontLeftDrive.getCurrentPosition()  + (int)(forwardCounts + strafeCounts);
@@ -350,7 +357,7 @@ public class RobotControllerAuto {
 
         int consecutiveCorrectIterations = 0;
         while (consecutiveCorrectIterations < 3 && robot.opModeIsActive()) {
-            if (distance > MIN_DIST_TO_STOP || Math.abs(getHeading() - wantedH) > HEADING_THRESHOLD) {
+            if (distance > MIN_DIST_TO_STOP || Math.abs(normalize(currentHeading - wantedH)) > HEADING_THRESHOLD) {
                 consecutiveCorrectIterations = 0;
             } else {
                 consecutiveCorrectIterations++;
@@ -363,7 +370,6 @@ public class RobotControllerAuto {
 
             angleDiff = Math.toRadians(moveAngle - currentHeading);
 
-            // Compute local dx, dy relative to robot heading
             strafeCounts = dx * Math.sin(angleDiff) * STRAFE_COUNTS_PER_INCH;
             forwardCounts = dy * Math.cos(angleDiff) * FORWARD_COUNTS_PER_INCH;
 
@@ -378,8 +384,15 @@ public class RobotControllerAuto {
             backLeftDrive.setTargetPosition(blTarget);
             backRightDrive.setTargetPosition(brTarget);
 
+            moveRobot(speed, 0, getSteeringCorrection(wantedH, P_DRIVE_GAIN));
+
             distance = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
         }
+
+        frontLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        frontRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        backLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        backRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         moveRobot(0, 0, 0);
     }
 
