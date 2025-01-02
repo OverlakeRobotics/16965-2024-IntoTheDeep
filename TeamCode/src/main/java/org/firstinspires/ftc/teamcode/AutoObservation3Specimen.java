@@ -187,7 +187,7 @@ public class AutoObservation3Specimen extends LinearOpMode {
         pivot = new Pivot(
                 hardwareMap.get(DcMotorEx.class, "PIVOTLEFT"),
                 hardwareMap.get(DcMotorEx.class, "PIVOTRIGHT"),
-                650
+                520
         );
         intake = new Intake(hardwareMap);
         WebcamName camera = hardwareMap.get(WebcamName.class, "Webcam 1");

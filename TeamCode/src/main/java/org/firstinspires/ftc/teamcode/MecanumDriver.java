@@ -77,7 +77,7 @@ public class MecanumDriver extends OpMode {
     public static int OLD_VIPER_PLACE_SPECIMEN = 1200;
     public static int PIVOT_PLACE_SPECIMEN = -1172;
     public static int VIPER_PLACE_SPECIMEN = 417;
-    public static int PIVOT_POSITION_OFFSET_COUNTS = 650;
+    public static int PIVOT_POSITION_OFFSET_COUNTS = 520;
     public static double MAX_HORIZONTAL_SIZE = 40;
     public final boolean isFieldCentric = false;
     private ViperSlide viperSlide;
