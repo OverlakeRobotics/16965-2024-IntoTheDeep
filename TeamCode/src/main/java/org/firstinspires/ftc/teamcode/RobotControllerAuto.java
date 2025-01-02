@@ -122,7 +122,7 @@ public class RobotControllerAuto {
 
 
     /**
-     * Drive a given distance in a specified field-oriented direction (moveAngle),
+     * Drive a given distance in a specified field-oriented direction (moveAngle)
      * while maintaining a specified heading.
      *
      * @param maxDriveSpeed Max speed (0 to 1)
