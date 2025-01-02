@@ -35,6 +35,8 @@ public class RobotControllerAuto {
     private double xPos;
     private double yPos;
     private double hPos;
+    private double errorX;
+    private double errorY;
     private int currentAprilTagID;
     private final LinearOpMode robot;
     private final AprilTagProcessor aprilTag;
@@ -130,6 +132,26 @@ public class RobotControllerAuto {
      */
     public void driveStraight(double distance, double moveAngle, double maxDriveSpeed, double heading, boolean doSlowDown) {
         if (!robot.opModeIsActive()) return;
+
+        // Uses errorX and errorY to calculate a new distance and moveAngle, adjusting the endpoint by errorX and errorY.
+        // Check to make sure this is right if something goes wrong.
+        if (errorX != 0 || errorY != 0) {
+            // Convert angle to radians
+            double angleRad = Math.toRadians(moveAngle);
+            // Calculate original endpoint
+            double x = distance * Math.cos(angleRad);
+            double y = distance * Math.sin(angleRad);
+            // Shift the point by dx and dy
+            double xNew = x + errorX;
+            double yNew = y + errorY;
+            // Calculate new distance and angle
+            distance = Math.sqrt(xNew * xNew + yNew * yNew);
+            moveAngle = Math.atan2(yNew, xNew);
+            moveAngle = Math.toDegrees(moveAngle);
+            errorX = 0;
+            errorY = 0;
+        }
+
         moveAngle = normalize(-moveAngle);
         // Convert angles to radians
         double angleDiff = Math.toRadians(moveAngle - heading);
@@ -221,6 +243,23 @@ public class RobotControllerAuto {
 
     public void driveStraight(double distance, double moveAngle, double maxDriveSpeed, double heading) {
         driveStraight(distance, moveAngle, maxDriveSpeed, heading, true);
+    }
+
+    // Implementation of what david was talking about. Instead of lining up with a point, it tracks
+    // how far off it was at the end of the drive, so that during the next drive, it can correct for
+    // the error using the errorX and errorY fields. This should be faster.
+    //
+    // One note is that for this to work the distances given by the april tag have to be correct,
+    // so if it is not working by way overshooting or undershooting the target, verify that if you
+    // move the robot 1 inch, there is a 1 inch change in its position according to the april tag.
+    public void aprilDriveErrorTracking(double wantedX, double wantedY, double wantedH, double speed) {
+        double dy = wantedY - yPos;
+        double dx = wantedX - xPos;
+        double moveDirection = Math.atan2(dx, dy);
+        double distance = Math.hypot(dx, dy);
+        driveStraight(distance, moveDirection, wantedH, speed);
+        errorX = wantedX - xPos;
+        errorY = wantedY - yPos;
     }
 
     private static double normalize(double degrees) {
@@ -330,14 +369,14 @@ public class RobotControllerAuto {
         double currentHeading = getHeading();
         double moveAngle = Math.toDegrees(Math.atan2(dx, dy));
 
-        // Possibly remove normalize if it does not work?
+        // I think angleDiff is off and that might be why this function does not work
         double angleDiff = Math.toRadians(normalize(moveAngle - currentHeading));
 
         // If this doesn't work go back to what is used in the driveStraight method.
         // Maybe also mess around with negatives or swapping sines and cosines.
         // Compute local dx, dy relative to robot heading
-        double strafeCounts = (dx * Math.cos(angleDiff) + dy * Math.sin(angleDiff)) * STRAFE_COUNTS_PER_INCH;
-        double forwardCounts = (-dx * Math.sin(angleDiff) + dy * Math.cos(angleDiff)) *  FORWARD_COUNTS_PER_INCH;
+        double strafeCounts = dx * Math.sin(angleDiff) * STRAFE_COUNTS_PER_INCH;
+        double forwardCounts = dy * Math.cos(angleDiff) * FORWARD_COUNTS_PER_INCH;
 
         // Compute target increments for each wheel
         int flTarget = frontLeftDrive.getCurrentPosition()  + (int)(forwardCounts + strafeCounts);
