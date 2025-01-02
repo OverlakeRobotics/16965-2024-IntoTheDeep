@@ -336,8 +336,8 @@ public class RobotControllerAuto {
         // If this doesn't work go back to what is used in the driveStraight method.
         // Maybe also mess around with negatives or swapping sines and cosines.
         // Compute local dx, dy relative to robot heading
-        double strafeCounts = (dx * Math.cos(angleDiff) + dy * Math.sin(angleDiff)) * STRAFE_COUNTS_PER_INCH;
-        double forwardCounts = (-dx * Math.sin(angleDiff) + dy * Math.cos(angleDiff)) *  FORWARD_COUNTS_PER_INCH;
+        double forwardCounts = -(dx * Math.cos(angleDiff) + dy * Math.sin(angleDiff)) * FORWARD_COUNTS_PER_INCH;
+        double strafeCounts = (-dx * Math.sin(angleDiff) + dy * Math.cos(angleDiff)) *  STRAFE_COUNTS_PER_INCH;
 
         // Compute target increments for each wheel
         int flTarget = frontLeftDrive.getCurrentPosition()  + (int)(forwardCounts + strafeCounts);
@@ -368,10 +368,14 @@ public class RobotControllerAuto {
             currentHeading = getHeading();
             moveAngle = Math.toDegrees(Math.atan2(dx, dy));
 
-            angleDiff = Math.toRadians(moveAngle - currentHeading);
+            angleDiff = Math.toRadians(normalize(moveAngle - currentHeading));
+            robot.telemetry.addData("Angle diff", angleDiff);
+            robot.telemetry.addData("dx", dx);
+            robot.telemetry.addData("dy", dy);
+            robot.telemetry.update();
 
-            strafeCounts = dx * Math.sin(angleDiff) * STRAFE_COUNTS_PER_INCH;
-            forwardCounts = dy * Math.cos(angleDiff) * FORWARD_COUNTS_PER_INCH;
+            forwardCounts = -(dx * Math.cos(angleDiff) + dy * Math.sin(angleDiff)) * FORWARD_COUNTS_PER_INCH;
+            strafeCounts = (-dx * Math.sin(angleDiff) + dy * Math.cos(angleDiff)) *  STRAFE_COUNTS_PER_INCH;
 
             // Compute target increments for each wheel
             flTarget = frontLeftDrive.getCurrentPosition()  + (int)(forwardCounts + strafeCounts);
