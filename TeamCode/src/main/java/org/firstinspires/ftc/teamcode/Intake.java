@@ -73,7 +73,7 @@ public class Intake {
     }
 
     public void hingeToDegree(int degree) {
-        double position = HINGE_MAX_POSITION - (HINGE_MAX_POSITION / 187.5) * (degree + 30);
+        double position = (HINGE_MAX_POSITION - (HINGE_MAX_POSITION / 187.5) * (degree));
         position = Math.min(Math.max(0, position), HINGE_MAX_POSITION);
         hingeLeft.setPosition(position);
         hingeRight.setPosition(position);

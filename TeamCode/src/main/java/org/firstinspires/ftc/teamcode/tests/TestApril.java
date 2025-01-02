@@ -38,7 +38,7 @@ public class TestApril extends LinearOpMode {
         waitForStart();
         intake.close();
         robotController.holdHeading(0, 3);
-        robotController.aprilTagDrive(-43.4, 51.8, 0, 1.0);
+        robotController.aprilTagDriveEncoders(-43.4, 51.8, 0, 1.0);
         robotController.holdHeading(0, 1000);
     }
 
