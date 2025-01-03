@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.dashboard.FtcDashboard;
-import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -15,44 +14,36 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
-@Config
-@Autonomous(name="April Test", group="Robot")
-public class TestApril extends LinearOpMode {
-    public static final double DRIVE_SPEED = 2.7 + 0.75;
-    public static final double TURN_SPEED = 1.5;
+@Autonomous(name="April Error Test", group="Robot")
+public class AprilTagErrorTest extends LinearOpMode {
+    public static final double DRIVE_SPEED = 0.8;
+    public static final double TURN_SPEED = 0.75;
     private RobotControllerAuto robotController;
     private final ElapsedTime runtime = new ElapsedTime();
     private final static double VIPER_POWER = 0.75;
     private final static double PIVOT_POWER = 0.35;
-    public static double moveSpeed = 1.5;
-    public static double distance = 48;
-    public static double sleepTime = 100;
     public final boolean isFieldCentric = false;
     private ViperSlide viperSlide;
     private Pivot pivot;
     private Intake intake;
     @Override
-    public void runOpMode() {
+    public void runOpMode() throws InterruptedException {
         // Initialize
         initialize();
         waitForStart();
         intake.close();
-        robotController.holdHeading(0, 3);
-        robotController.aprilTagDrive(-43.4, 51.8, 0, 1.0);
-        robotController.holdHeading(0, 1000);
+        robotController.driveStraight(24, 90, 0.25, 0);
+        robotController.aprilDriveErrorTracking(-43.4, 51.8, 0, 0.25);
+        robotController.driveStraight(20, -90, 0.25, 0);
     }
 
     public void initialize() {
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         DcMotorEx backLeft = hardwareMap.get(DcMotorEx.class, "BACKLEFT");
         DcMotorEx backRight = hardwareMap.get(DcMotorEx.class, "BACKRIGHT");
         DcMotorEx frontLeft = hardwareMap.get(DcMotorEx.class, "FRONTLEFT");
         DcMotorEx frontRight = hardwareMap.get(DcMotorEx.class, "FRONTRIGHT");
-        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
-//        claw = hardwareMap.get(Servo.class, "CLAWLEFT");
-//        claw.setDirection(Servo.Direction.REVERSE);
-//        wrist = hardwareMap.get(Servo.class, "CLAWRIGHT");
 
-//        AutonomousNavigator navigator = new AutonomousNavigator(this, telemetry, 0, 0, 0);
         IMU gyro = hardwareMap.get(IMU.class, "imu2");
 
         viperSlide = new ViperSlide(
@@ -62,7 +53,7 @@ public class TestApril extends LinearOpMode {
         pivot = new Pivot(
                 hardwareMap.get(DcMotorEx.class, "PIVOTLEFT"),
                 hardwareMap.get(DcMotorEx.class, "PIVOTRIGHT"),
-                650
+                520
         );
         intake = new Intake(hardwareMap);
         WebcamName camera = hardwareMap.get(WebcamName.class, "Webcam 1");
@@ -70,7 +61,7 @@ public class TestApril extends LinearOpMode {
                 -7, 5.6, 7, 0);
         YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,
                 -90, -82, 14, 0);
-        robotController = new RobotControllerAuto(backLeft, backRight, frontLeft, frontRight, gyro, camera, 0, 0, 0, cameraPosition, cameraOrientation, this);
+        robotController = new RobotControllerAuto(backLeft, backRight, frontLeft, frontRight, gyro, camera, 0, 0, -180, cameraPosition, cameraOrientation, this);
 
         telemetry.addData("Status", "Initialized");
     }

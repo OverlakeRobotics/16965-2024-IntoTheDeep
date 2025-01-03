@@ -46,12 +46,13 @@ public class AutoObservation3Specimen extends LinearOpMode {
 
         // push 2 samples into observation zone
         robotController.driveStraight(7.0, 180.0, DRIVE_SPEED, 0);
-        robotController.driveStraight(24.0, 90.0, DRIVE_SPEED, 0, false);
+        robotController.driveStraight(24.0, 90.0, DRIVE_SPEED, 0);
         if (robotController.getCurrentAprilTagID() == 11) {
-            robotController.aprilTagDrive(-43.4, 51.8, 0, 1.0);
+            robotController.aprilDriveErrorTracking(-43.4, 51.8, 0, DRIVE_SPEED);
         } else {
-            robotController.aprilTagDrive(43.4, -51.8, 0, 1.0);
+            robotController.aprilDriveErrorTracking(43.4, -51.8, 0, DRIVE_SPEED);
         }
+        robotController.holdHeading(0, 100);
         robotController.driveStraight(27, 0.0, DRIVE_SPEED, 0);
         robotController.driveStraight(10.5, 90.0, DRIVE_SPEED, 0);
         robotController.driveStraight(38.0, 180.0, DRIVE_SPEED, 0);
@@ -119,9 +120,9 @@ public class AutoObservation3Specimen extends LinearOpMode {
         intake.hingeToDegree(75);
         robotController.driveStraight(40.0, 90.0, DRIVE_SPEED, 0, false);
         if (robotController.getCurrentAprilTagID() == 11) {
-            robotController.aprilTagDrive(-56.4, 57.4, 0, 1.0);
+            robotController.aprilDriveErrorTracking(-56.4, 57.4, 0, DRIVE_SPEED);
         } else {
-            robotController.aprilTagDrive(56.4, -57.4, 0, 1.0);
+            robotController.aprilDriveErrorTracking(56.4, -57.4, 0, DRIVE_SPEED);
         }
 
         robotController.driveStraight(11, -180, DRIVE_SPEED, 0.0);

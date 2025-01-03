@@ -255,9 +255,23 @@ public class RobotControllerAuto {
     public void aprilDriveErrorTracking(double wantedX, double wantedY, double wantedH, double speed) {
         double dy = wantedY - yPos;
         double dx = wantedX - xPos;
-        double moveDirection = Math.atan2(dx, dy);
+        double moveDirection = Math.toDegrees(Math.atan2(dx, dy));
+        // start temp block
+        // This is just to see values, remove this for actual program
+        ElapsedTime holdTimer = new ElapsedTime();
+        holdTimer.reset();
+        moveRobot(0, 0, 0);
+        while (robot.opModeIsActive() && (holdTimer.seconds() < 1000)) {
+            robot.telemetry.addData("dx", dx);
+            robot.telemetry.addData("xPos", xPos);
+            robot.telemetry.addData("dy", dy);
+            robot.telemetry.addData("yPos", yPos);
+            robot.telemetry.addData("moveDirec", moveDirection);
+            robot.telemetry.update();
+        }
+        // end temp block
         double distance = Math.hypot(dx, dy);
-        driveStraight(distance, moveDirection, wantedH, speed);
+        driveStraight(distance, -moveDirection, speed, wantedH);
         errorX = wantedX - xPos;
         errorY = wantedY - yPos;
     }

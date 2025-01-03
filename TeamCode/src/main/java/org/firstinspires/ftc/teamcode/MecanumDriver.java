@@ -166,16 +166,16 @@ public class MecanumDriver extends OpMode {
         telemetry.addData("Viper Extension Beyond Chassis", extensionBeyondChassis);
 
         double pivotPower = Math.min(MAX_PIVOT_VELOCITY, BASE_PIVOT_VELOCITY + (MAX_PIVOT_VELOCITY - BASE_PIVOT_VELOCITY) * (runtime.seconds() - pivotStartedTime) / PIVOT_RAMP_TIME);
-        double maxViperExtension = 17.5; // reduced by 5, change as necessary
-        if (hingeDegree > 15) maxViperExtension = 11.5;
-        if (pivot.getAngleDegrees() > 80) maxViperExtension = (double) ViperSlide.MAX_POSITION / ViperSlide.MOVE_COUNTS_PER_INCH;
+        double maxViperExtension = (double) ViperSlide.MAX_POSITION / ViperSlide.MOVE_COUNTS_PER_INCH;//17.5; // reduced by 5, change as necessary
+//        if (hingeDegree > 15) maxViperExtension = 11.5;
+//        if (pivot.getAngleDegrees() > 80) maxViperExtension = (double) ViperSlide.MAX_POSITION / ViperSlide.MOVE_COUNTS_PER_INCH;
 //        double maxViperExtension = Math.abs((MAX_HORIZONTAL_SIZE - ViperSlide.CHASSIS_TO_PIVOT_LENGTH) / Math.cos(Math.toRadians(pivot.getAngleDegrees()))) - ViperSlide.BASE_ARM_LENGTH;
         //double pivotAngleLimit = Math.toDegrees(Math.acos((MAX_HORIZONTAL_SIZE - ViperSlide.CHASSIS_TO_PIVOT_LENGTH) / (viperSlide.getCurrentPositionInches() + ViperSlide.BASE_ARM_LENGTH)));
 //        telemetry.addData("Max Viper Extension", maxViperExtension);
 //        telemetry.addData("Pivot Angle Limit", pivotAngleLimit);
 //        if (pivot.getAngleDegrees() < 0) pivotAngleLimit = -pivotAngleLimit;
         // Pivot
-        if (gamepad2.dpad_down && !(viperSlide.getCurrentPositionInches() > 17.5 && pivot.getAngleDegrees() <= 90)) {
+        if (gamepad2.dpad_down /*&& !(viperSlide.getCurrentPositionInches() > 17.5 && pivot.getAngleDegrees() <= 90)*/) {
 //            if (viperSlide.getCurrentPositionInches() > maxViperExtension && !Double.isNaN(pivotAngleLimit)) {
 //                pivot.setAngleDegrees(pivotAngleLimit);
 //            } else
