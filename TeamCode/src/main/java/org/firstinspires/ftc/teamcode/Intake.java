@@ -19,7 +19,8 @@ public class Intake {
 //    public static final double RIGHT_CLOSED_POSITION = 0.7914;
     public static double LARGE_OPEN_POSITION = 0;
     public static double NORMAL_OPEN_POSITION = 0.1;
-    public static double CLOSED_POSITION = 0.21;
+    public static double TINY_OPEN_POSITION = 0.19;
+    public static double CLOSED_POSITION = 0.23;
     public static final double HINGE_MAX_POSITION = 1.0;
     public static final double WRIST_MIN_POSITION = 0;
     public static final double WRIST_MAX_POSITION = 1.0;
@@ -56,6 +57,13 @@ public class Intake {
     public void largeOpen() {
         clawLeft.setPosition(LARGE_OPEN_POSITION);
         clawRight.setPosition(LARGE_OPEN_POSITION);
+        isOpen = true;
+    }
+
+    // to fix when specimen is angled badly for placing
+    public void tinyOpen() {
+        clawLeft.setPosition(TINY_OPEN_POSITION);
+        clawRight.setPosition(TINY_OPEN_POSITION);
         isOpen = true;
     }
 

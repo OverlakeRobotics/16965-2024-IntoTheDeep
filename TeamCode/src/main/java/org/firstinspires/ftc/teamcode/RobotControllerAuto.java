@@ -253,22 +253,23 @@ public class RobotControllerAuto {
     // so if it is not working by way overshooting or undershooting the target, verify that if you
     // move the robot 1 inch, there is a 1 inch change in its position according to the april tag.
     public void aprilDriveErrorTracking(double wantedX, double wantedY, double wantedH, double speed) {
+        updateRobotPositionWithApril();
         double dy = wantedY - yPos;
         double dx = wantedX - xPos;
-        double moveDirection = Math.toDegrees(Math.atan2(dx, dy));
+        double moveDirection = Math.toDegrees(Math.atan2(dx, dy)) + 90;
         // start temp block
         // This is just to see values, remove this for actual program
-        ElapsedTime holdTimer = new ElapsedTime();
-        holdTimer.reset();
-        moveRobot(0, 0, 0);
-        while (robot.opModeIsActive() && (holdTimer.seconds() < 1000)) {
-            robot.telemetry.addData("dx", dx);
-            robot.telemetry.addData("xPos", xPos);
-            robot.telemetry.addData("dy", dy);
-            robot.telemetry.addData("yPos", yPos);
-            robot.telemetry.addData("moveDirec", moveDirection);
-            robot.telemetry.update();
-        }
+//        ElapsedTime holdTimer = new ElapsedTime();
+//        holdTimer.reset();
+//        moveRobot(0, 0, 0);
+//        while (robot.opModeIsActive() && (holdTimer.seconds() < 5)) {
+//            robot.telemetry.addData("dx", dx);
+//            robot.telemetry.addData("xPos", xPos);
+//            robot.telemetry.addData("dy", dy);
+//            robot.telemetry.addData("yPos", yPos);
+//            robot.telemetry.addData("moveDirec", moveDirection);
+//            robot.telemetry.update();
+//        }
         // end temp block
         double distance = Math.hypot(dx, dy);
         driveStraight(distance, -moveDirection, speed, wantedH);
