@@ -26,7 +26,7 @@ import java.util.List;
 @Config
 public class RobotControllerAuto {
 
-    private static final double MIN_DIST_TO_STOP = 2.0;
+    private static final double MIN_DIST_TO_STOP = 3.0;
     private final DcMotor frontLeftDrive;
     private final DcMotor frontRightDrive;
     private final DcMotor backLeftDrive;
@@ -254,9 +254,9 @@ public class RobotControllerAuto {
     // move the robot 1 inch, there is a 1 inch change in its position according to the april tag.
     public void aprilDriveErrorTracking(double wantedX, double wantedY, double wantedH, double speed) {
         updateRobotPositionWithApril();
-        double dy = wantedY - yPos;
-        double dx = wantedX - xPos;
-        double moveDirection = Math.toDegrees(Math.atan2(dx, dy)) + 90;
+        double dy = wantedY - yPos; // neg
+        double dx = wantedX - xPos; // neg
+        double moveDirection = Math.toDegrees(Math.atan2(-dx, -dy));
         // start temp block
         // This is just to see values, remove this for actual program
 //        ElapsedTime holdTimer = new ElapsedTime();
@@ -272,7 +272,12 @@ public class RobotControllerAuto {
 //        }
         // end temp block
         double distance = Math.hypot(dx, dy);
-        driveStraight(distance, -moveDirection, speed, wantedH);
+        driveStraight(distance, moveDirection, speed, wantedH);
+        dy = wantedY - yPos; // neg
+        dx = wantedX - xPos; // neg
+        moveDirection = Math.toDegrees(Math.atan2(-dx, -dy));
+        distance = Math.hypot(dx, dy);
+        driveStraight(distance, moveDirection, speed, wantedH);
         errorX = wantedX - xPos;
         errorY = wantedY - yPos;
     }
@@ -374,6 +379,8 @@ public class RobotControllerAuto {
             distance = Math.sqrt(Math.pow(wantedX - xPos, 2) + Math.pow(wantedY - yPos, 2));
         }
         moveRobot(0, 0, 0);
+        errorX = wantedX - xPos;
+        errorY = wantedY - yPos;
     }
 
     public void aprilTagDriveEncoders(double wantedX, double wantedY, double wantedH, double speed) throws RuntimeException {

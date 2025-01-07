@@ -32,9 +32,10 @@ public class AprilTagErrorTest extends LinearOpMode {
         initialize();
         waitForStart();
         intake.close();
-        robotController.driveStraight(24, 90, 0.25, 0);
-        robotController.aprilDriveErrorTracking(-43.4, 51.8, 0, 0.25);
-        robotController.driveStraight(20, -90, 0.25, 0);
+//        robotController.driveStraight(24, 90, 0.25, 0);
+        robotController.holdHeading(0, 2);
+        robotController.aprilDriveErrorTracking(-43.4, 51.8, 0, 0.8);
+//        robotController.driveStraight(20, -90, 0.25, 0);
     }
 
     public void initialize() {
