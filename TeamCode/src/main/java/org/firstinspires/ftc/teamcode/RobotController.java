@@ -337,6 +337,23 @@ public class RobotController {
         updateRobotPosition();
     }
 
+    public void stop() {
+        backLeft.setTargetPosition(backLeft.getCurrentPosition());
+        frontLeft.setTargetPosition(frontLeft.getCurrentPosition());
+        backRight.setTargetPosition(backRight.getCurrentPosition());
+        frontRight.setTargetPosition(frontRight.getCurrentPosition());
+
+        backLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        frontLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        frontRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        backLeft.setPower(0.2);
+        frontLeft.setPower(0.2);
+        backRight.setPower(0.2);
+        frontRight.setPower(0.2);
+    }
+
     // Behavior: Overloaded method of move. This sets the default of isTelemetry.
     // Params:
     //      - double forward: The forward power for the robot.
@@ -620,6 +637,10 @@ public class RobotController {
     //                                direction of the robot, or the direction the robot was
     //                                initialized in.
     public void continuousDrive(double forwardPower, double strafePower, double turn, boolean isFieldCentric) {
+        backLeft.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        backRight.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        frontLeft.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        frontRight.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         double currentHeading = getAngleImuDegrees();
         double forward;
         double strafe;

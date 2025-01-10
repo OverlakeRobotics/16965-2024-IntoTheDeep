@@ -54,6 +54,7 @@ public class RobotControllerAuto {
     static final double FORWARD_COUNTS_PER_INCH = 32.64;
     static final double STRAFE_COUNTS_PER_INCH = 38.89;
     static final int COUNTS_LEFT_TO_SLOW_DOWN = 500;
+    private final ElapsedTime runtime;
 
     static final double     DEFAULT_DRIVE_SPEED             = 0.8;
     static final double     DEFAULT_TURN_SPEED              = 0.5;
@@ -93,6 +94,9 @@ public class RobotControllerAuto {
         this.backRightDrive = backRightDrive;
         this.frontLeftDrive = frontLeftDrive;
         this.frontRightDrive = frontRightDrive;
+
+        this.runtime = new ElapsedTime();
+        this.runtime.reset();
 
         this.imu = imu;
         RevHubOrientationOnRobot.LogoFacingDirection logoDirection = RevHubOrientationOnRobot.LogoFacingDirection.LEFT;
@@ -163,6 +167,9 @@ public class RobotControllerAuto {
         // double forwardInches = -dx * Math.sin(angleDiff) + dy * Math.cos(angleDiff)
         double dx = distance * Math.sin(angleDiff) * STRAFE_COUNTS_PER_INCH;
         double dy = distance * Math.cos(angleDiff) * FORWARD_COUNTS_PER_INCH;
+        double lastDistanceToDestination = 0;
+        double numStalledLoops = 0;
+        double start = runtime.seconds();
 
         // Compute target increments for each wheel
         int flTarget = frontLeftDrive.getCurrentPosition()  + (int)(dy + dx);
@@ -194,6 +201,10 @@ public class RobotControllerAuto {
                     Math.abs(brTarget - backRightDrive.getCurrentPosition()) +
                     Math.abs(flTarget - frontLeftDrive.getCurrentPosition()) +
                     Math.abs(frTarget - frontRightDrive.getCurrentPosition())) / 4.0;
+            double dCounts = Math.abs(lastDistanceToDestination - distanceToDestination);
+            lastDistanceToDestination = distanceToDestination;
+            if (runtime.seconds() - start > 0.5 && dCounts <= 10) numStalledLoops++;
+            else numStalledLoops = 0;
 
             robot.telemetry.addData("distance in", distanceToDestination);
             double scaleFactor = Math.min(1.0, 0.2 + (distanceToDestination / COUNTS_LEFT_TO_SLOW_DOWN));
@@ -223,13 +234,14 @@ public class RobotControllerAuto {
             if (distanceToDestination < 60) {
                 break;
             }
-        } while (robot.opModeIsActive() &&
+        } while (robot.opModeIsActive() && numStalledLoops < 3 &&
                 (frontLeftDrive.isBusy() || frontRightDrive.isBusy() ||
                 backLeftDrive.isBusy() || backRightDrive.isBusy()));
 
         // Stop motors and revert to RUN_USING_ENCODER
         if (doSlowDown) {
-            moveRobot(0, 0, 0);
+//            moveRobot(0, 0, 0);
+            stopRobot();
         }
         frontLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         frontRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -273,11 +285,8 @@ public class RobotControllerAuto {
         // end temp block
         double distance = Math.hypot(dx, dy);
         driveStraight(distance, moveDirection, speed, wantedH);
-        dy = wantedY - yPos; // neg
-        dx = wantedX - xPos; // neg
-        moveDirection = Math.toDegrees(Math.atan2(-dx, -dy));
-        distance = Math.hypot(dx, dy);
-        driveStraight(distance, moveDirection, speed, wantedH);
+//        moveRobot(0, 0, 0);
+        stopRobot();
         errorX = wantedX - xPos;
         errorY = wantedY - yPos;
     }
@@ -346,14 +355,14 @@ public class RobotControllerAuto {
         return currentAprilTagID;
     }
 
-    public void aprilTagDrive(double wantedX, double wantedY, double wantedH, double speed) throws RuntimeException {
+    public void aprilTagDrive(double wantedX, double wantedY, double wantedH, double speed, double distToStop) throws RuntimeException {
         double distance = Math.sqrt(Math.pow(wantedX - xPos, 2) + Math.pow(wantedY - yPos, 2));
         int consecutiveCorrectIterations = 0;
         aprilTagPIDForward.reset();
         aprilTagPIDStrafe.reset();
 
-        while (consecutiveCorrectIterations < 3 && robot.opModeIsActive()) {
-            if (distance > MIN_DIST_TO_STOP || Math.abs(getHeading() - wantedH) > HEADING_THRESHOLD) {
+        while (consecutiveCorrectIterations < 1 && robot.opModeIsActive()) {
+            if (distance > distToStop || Math.abs(getHeading() - wantedH) > HEADING_THRESHOLD) {
                 consecutiveCorrectIterations = 0;
             } else {
                 consecutiveCorrectIterations++;
@@ -378,9 +387,14 @@ public class RobotControllerAuto {
             moveRobot(forward, strafe, getSteeringCorrection(wantedH, P_DRIVE_GAIN));
             distance = Math.sqrt(Math.pow(wantedX - xPos, 2) + Math.pow(wantedY - yPos, 2));
         }
-        moveRobot(0, 0, 0);
+//        moveRobot(0, 0, 0);
+        stopRobot();
         errorX = wantedX - xPos;
         errorY = wantedY - yPos;
+    }
+
+    public void aprilTagDrive(double wantedX, double wantedY, double wantedH, double speed) throws RuntimeException {
+        aprilTagDrive(wantedX, wantedY, wantedH, speed, MIN_DIST_TO_STOP);
     }
 
     public void aprilTagDriveEncoders(double wantedX, double wantedY, double wantedH, double speed) throws RuntimeException {
@@ -454,7 +468,8 @@ public class RobotControllerAuto {
         frontRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         backLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         backRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        moveRobot(0, 0, 0);
+//        moveRobot(0, 0, 0);
+        stopRobot();
     }
 
     public void turnToHeading(double heading, double maxTurnSpeed) {
@@ -467,7 +482,8 @@ public class RobotControllerAuto {
             sendTelemetry(false);
         }
 
-        moveRobot(0, 0, 0);
+//        moveRobot(0, 0, 0);
+        stopRobot();
     }
     public void turnToHeading(double heading) {
         turnToHeading(heading, DEFAULT_TURN_SPEED);
@@ -485,7 +501,8 @@ public class RobotControllerAuto {
             sendTelemetry(false);
         }
 
-        moveRobot(0, 0, 0);
+//        moveRobot(0, 0, 0);
+        stopRobot();
     }
 
     public double getSteeringCorrection(double desiredHeading, double proportionalGain) {
@@ -529,6 +546,24 @@ public class RobotControllerAuto {
         backRightDrive.setPower(br);
 
 //        updateRobotPositionWithApril();
+        updateRobotPosition();
+    }
+
+    public void stopRobot() {
+        backLeftDrive.setTargetPosition(backLeftDrive.getCurrentPosition());
+        frontLeftDrive.setTargetPosition(frontLeftDrive.getCurrentPosition());
+        backRightDrive.setTargetPosition(backRightDrive.getCurrentPosition());
+        frontRightDrive.setTargetPosition(frontRightDrive.getCurrentPosition());
+
+        backLeftDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        frontLeftDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backRightDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        frontRightDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        backLeftDrive.setPower(0.2);
+        frontLeftDrive.setPower(0.2);
+        backRightDrive.setPower(0.2);
+        frontRightDrive.setPower(0.2);
         updateRobotPosition();
     }
 

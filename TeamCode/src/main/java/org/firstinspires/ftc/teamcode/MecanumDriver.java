@@ -102,6 +102,7 @@ public class MecanumDriver extends OpMode {
     private boolean hasViperManualStarted = false;
     private boolean viperManualDoneRamping = true;
     private boolean isInSpecimenPickupMacro = false;
+    private int numLoopsStopped = 0;
 
     @Override
     public void init() {
@@ -158,24 +159,30 @@ public class MecanumDriver extends OpMode {
     public void loop() {
         // Drivetrain
         if (!placingSpecimen) {
-            robotController.continuousDrive(gamepad1.left_stick_y * SPEED_MULTIPLIER * FORWARD_POWER,
-                    gamepad1.left_stick_x * SPEED_MULTIPLIER * STRAFE_POWER,
-                    gamepad1.right_stick_x * TURN_POWER, isFieldCentric);
+            if (gamepad1.left_stick_y == 0 && gamepad1.left_stick_x == 0 && gamepad1.right_stick_x == 0) {
+                numLoopsStopped++;
+                if (numLoopsStopped >= 3)
+                    robotController.stop();
+            } else {
+                numLoopsStopped = 0;
+                robotController.continuousDrive(gamepad1.left_stick_y * SPEED_MULTIPLIER * FORWARD_POWER,
+                        gamepad1.left_stick_x * SPEED_MULTIPLIER * STRAFE_POWER,
+                        gamepad1.right_stick_x * TURN_POWER, isFieldCentric);
+            }
         }
         double extensionBeyondChassis = viperSlide.getExtensionBeyondChassis(pivot.getAngleDegrees());
         telemetry.addData("Viper Extension Beyond Chassis", extensionBeyondChassis);
-
         double pivotPower = Math.min(MAX_PIVOT_VELOCITY, BASE_PIVOT_VELOCITY + (MAX_PIVOT_VELOCITY - BASE_PIVOT_VELOCITY) * (runtime.seconds() - pivotStartedTime) / PIVOT_RAMP_TIME);
-        double maxViperExtension = (double) ViperSlide.MAX_POSITION / ViperSlide.MOVE_COUNTS_PER_INCH; //17.5; // reduced by 5, change as necessary
-//        if (hingeDegree > 15) maxViperExtension = 11.5;
-//        if (pivot.getAngleDegrees() > 80) maxViperExtension = (double) ViperSlide.MAX_POSITION / ViperSlide.MOVE_COUNTS_PER_INCH;
+        double maxViperExtension = 17.5; // reduced by 5, change as necessary
+        if (hingeDegree > 15) maxViperExtension = 11.5;
+        if (pivot.getAngleDegrees() > 80) maxViperExtension = (double) ViperSlide.MAX_POSITION / ViperSlide.MOVE_COUNTS_PER_INCH;
 //        double maxViperExtension = Math.abs((MAX_HORIZONTAL_SIZE - ViperSlide.CHASSIS_TO_PIVOT_LENGTH) / Math.cos(Math.toRadians(pivot.getAngleDegrees()))) - ViperSlide.BASE_ARM_LENGTH;
         //double pivotAngleLimit = Math.toDegrees(Math.acos((MAX_HORIZONTAL_SIZE - ViperSlide.CHASSIS_TO_PIVOT_LENGTH) / (viperSlide.getCurrentPositionInches() + ViperSlide.BASE_ARM_LENGTH)));
 //        telemetry.addData("Max Viper Extension", maxViperExtension);
 //        telemetry.addData("Pivot Angle Limit", pivotAngleLimit);
 //        if (pivot.getAngleDegrees() < 0) pivotAngleLimit = -pivotAngleLimit;
         // Pivot
-        if (gamepad2.dpad_down /*&& !(viperSlide.getCurrentPositionInches() > 17.5 && pivot.getAngleDegrees() <= 90)*/) {
+        if (gamepad2.dpad_down && !(viperSlide.getCurrentPositionInches() > 17.5 && pivot.getAngleDegrees() <= 90)) {
 //            if (viperSlide.getCurrentPositionInches() > maxViperExtension && !Double.isNaN(pivotAngleLimit)) {
 //                pivot.setAngleDegrees(pivotAngleLimit);
 //            } else
@@ -188,10 +195,9 @@ public class MecanumDriver extends OpMode {
             }
             isSpecimenReady = false;
         } else if (gamepad2.dpad_up) {
-//            if (pivot.getAngleDegrees() > 90 && !isInSpecimenPickupMacro) {
-//                pivot.setAngleDegrees(90);
-//            } else
-            if (!pivotStarted) {
+            if (pivot.getAngleDegrees() > 90 && !isInSpecimenPickupMacro) {
+                pivot.setAngleDegrees(90);
+            } else if (!pivotStarted) {
                 pivotStartedTime = runtime.seconds();
                 pivotStarted = true;
                 pivot.move(-pivotPower);
@@ -298,7 +304,7 @@ public class MecanumDriver extends OpMode {
 ////                intake.setWristDegree(0);
 //                intake.setWristDegree(-81);
 //                isSpecimenReady = true;
-                pivot.setAngleDegrees(112);
+                pivot.setAngleDegrees(106);
                 viperTargetPosition = 1095; //1321
                 hingeDegree = -30;
                 ramp = new ExponentialRamp(new Point(runtime.seconds(), VIPER_START_POWER), new Point(runtime.seconds() + VIPER_RAMP_TIME_SECONDS, MAX_VIPER_POWER));
