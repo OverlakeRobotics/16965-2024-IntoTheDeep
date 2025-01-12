@@ -289,7 +289,7 @@ public class MecanumDriver extends OpMode {
 //            hingeDegree = 157;
 //            viperTargetPosition = 292;
             isInSpecimenPickupMacro = true;
-            pivot.setAngleDegrees(212);
+            pivot.setAngleDegrees(215);
             intake.setWristDegree(0);
             intake.largeOpen();
             hingeDegree = 75;
@@ -316,14 +316,14 @@ public class MecanumDriver extends OpMode {
 //                intake.setWristDegree(-81);
 //                isSpecimenReady = true;
                 pivot.setAngleDegrees(106);
-                viperTargetPosition = 1095; //1321
+                viperTargetPosition = 1155; //1321
                 hingeDegree = -30;
                 ramp = new ExponentialRamp(new Point(runtime.seconds(), VIPER_START_POWER), new Point(runtime.seconds() + VIPER_RAMP_TIME_SECONDS, MAX_VIPER_POWER));
                 isSpecimenReady = true;
                 viperRamping = true;
             } else {
 //                viperSlide.setTargetPosition(VIPER_PLACE_SPECIMEN - 200);
-                viperTargetPosition = 1620;
+                viperTargetPosition = 1730;
                 ramp = new ExponentialRamp(new Point(runtime.seconds(), VIPER_START_POWER), new Point(runtime.seconds() + VIPER_RAMP_TIME_SECONDS, MAX_VIPER_POWER));
                 viperRamping = true;
 //                placeSpecimenStartTime = runtime.seconds();

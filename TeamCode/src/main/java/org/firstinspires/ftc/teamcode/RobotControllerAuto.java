@@ -129,7 +129,7 @@ public class RobotControllerAuto {
 
         this.robot = robot;
 
-        setManualExposure(6, 250);
+        setManualExposure(25, 255);
 
         this.hPos = startH;
         this.xPos = startX;
@@ -374,6 +374,7 @@ public class RobotControllerAuto {
     }
 
     public boolean canSeeAprilTag() {
+        updateRobotPositionWithApril();
         return canSeeAprilTag;
     }
 
@@ -399,6 +400,11 @@ public class RobotControllerAuto {
             robot.telemetry.addData("dx", dx);
             robot.telemetry.addData("dy", dy);
             robot.telemetry.update();
+
+            //-30 30
+            //-35 25
+            //30 -30
+            //35 -25
 
             // Calculate move direction
             double moveDirection = Math.atan2(dx, dy);
