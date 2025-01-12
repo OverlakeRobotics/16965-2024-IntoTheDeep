@@ -5,7 +5,9 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -16,7 +18,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
 @Autonomous(name="3 Specimen Auto Observation", group="Robot")
 public class AutoObservation3Specimen extends LinearOpMode {
-    public static final double DRIVE_SPEED = 0.8;
+    public static final double DRIVE_SPEED = 0.85;
     public static final double TURN_SPEED = 0.75;
     private RobotControllerAuto robotController;
     private final ElapsedTime runtime = new ElapsedTime();
@@ -34,10 +36,10 @@ public class AutoObservation3Specimen extends LinearOpMode {
         intake.close();
 
         // place first specimen
-        pivot.setTargetPosition(-1300); //1277
+        pivot.setTargetPosition(-1277); //1277
         viperSlide.setTargetPosition(417);
-        intake.hingeToDegree(112);
-        robotController.driveStraight(29.0, 0.0, DRIVE_SPEED, 0);
+        intake.hingeToDegree(120); //112
+        robotController.driveStraight(31.0, 0.0, DRIVE_SPEED - 0.2, 0, true, true);
         robotController.holdHeading(0, 0.05);
         viperSlide.setTargetPosition(ViperSlide.MIN_POSITION);
         robotController.driveStraight(4.0, 180.0, DRIVE_SPEED, 0);
@@ -45,19 +47,26 @@ public class AutoObservation3Specimen extends LinearOpMode {
         robotController.holdHeading(0, 0.1);
 
         // push 2 samples into observation zone
-        robotController.driveStraight(7.0, 180.0, DRIVE_SPEED, 0);
-        robotController.driveStraight(24.0, 90.0, DRIVE_SPEED, 0, false);
-        if (robotController.getCurrentAprilTagID() == 11) {
-            robotController.aprilTagDrive(-43.4, 51.8, 0, DRIVE_SPEED);
-        } else {
-            robotController.aprilTagDrive(43.4, -51.8, 0, DRIVE_SPEED);
-        }
-        robotController.driveStraight(24, 0.0, DRIVE_SPEED, 0);
+        robotController.driveStraight(5.0, 180.0, DRIVE_SPEED, 0);
+        robotController.driveStraight(24.5, 90.0, DRIVE_SPEED, 0);
+//        if (robotController.getCurrentAprilTagID() == 11) {
+//            robotController.aprilTagDrive(-43.4, 51.8, 0, DRIVE_SPEED);
+//        } else {
+//            robotController.aprilTagDrive(43.4, -51.8, 0, DRIVE_SPEED);
+//        }
+        robotController.driveStraight(28, 0.0, DRIVE_SPEED, 0);
         robotController.driveStraight(10.5, 90.0, DRIVE_SPEED, 0);
-        robotController.driveStraight(35.0, 180.0, DRIVE_SPEED, 0);
-        robotController.driveStraight(35.0, 0.0, DRIVE_SPEED, 0);
+        robotController.driveStraight(39.0, 180.0, DRIVE_SPEED, 0);
+        // prep for wall pickup
+        pivot.setAngleDegrees(212);
+        intake.setWristDegree(0);
+        intake.largeOpen();
+        intake.hingeToDegree(75);
+        viperSlide.setTargetPosition(ViperSlide.MIN_POSITION + 20);
+        robotController.driveStraight(39.0, 0.0, DRIVE_SPEED, 0);
         robotController.driveStraight(10.5, 90.0, DRIVE_SPEED, 0);
-        robotController.driveStraight(35.0, 180.0, DRIVE_SPEED, 0);
+        robotController.driveStraight(34.0, 180.0, DRIVE_SPEED, 0);
+        robotController.driveStraight(11.0, 180.0, DRIVE_SPEED - 0.3, 0);
 
 //        robotController.distanceDrive(47.0, -0.0, DRIVE_SPEED, 0);
 //        robotController.distanceDrive(10.5, 90.0, DRIVE_SPEED, 0);
@@ -83,13 +92,9 @@ public class AutoObservation3Specimen extends LinearOpMode {
 //        robotController.distanceDrive(17.0, 180.0, DRIVE_SPEED - 2, 180);
 //        intake.close();
 //        robotController.sleep(0.5);
-        pivot.setAngleDegrees(206);
-        intake.setWristDegree(0);
-        intake.largeOpen();
-        intake.hingeToDegree(75);
-        viperSlide.setTargetPosition(ViperSlide.MIN_POSITION + 20);
-        robotController.driveStraight(8, -45.0, DRIVE_SPEED, 0);
-        robotController.driveStraight(10, -180, DRIVE_SPEED - 0.3, 0.0);
+
+//        robotController.driveStraight(12, -45.0, DRIVE_SPEED, 0);
+//        robotController.driveStraight(10, -180, DRIVE_SPEED - 0.3, 0.0);
         robotController.holdHeading(0,0.2);
         intake.close();
         robotController.holdHeading(0,0.2);
@@ -107,29 +112,29 @@ public class AutoObservation3Specimen extends LinearOpMode {
         intake.hingeToDegree(-30);
         robotController.holdHeading(0,0.2);
         intake.tinyOpen();
-        viperSlide.setTargetPosition(1095);
-        robotController.driveStraight(48.2945, -70.6992, DRIVE_SPEED, 0);
+        viperSlide.setTargetPosition(1120);
+        robotController.driveStraight(52, -70.6992, DRIVE_SPEED, 0); // 48.2945
         intake.close();
-        robotController.driveStraight(16.0, -0.0, DRIVE_SPEED - 0.2, 0);
-        viperSlide.setTargetPosition(1670);
+        robotController.driveStraight(14.0, -0.0, DRIVE_SPEED - 0.2, 0, true, true);
+        viperSlide.setTargetPosition(1695);
         viperSlide.waitForFinish();
         intake.open();
         robotController.holdHeading(0,0.2);
-        robotController.driveStraight(5.0, -180, DRIVE_SPEED, 0, false);
+        robotController.driveStraight(3.0, -180, DRIVE_SPEED, 0, false);
         viperSlide.setTargetPosition(ViperSlide.MIN_POSITION + 20);
         robotController.holdHeading(0,0.2);
-        pivot.setAngleDegrees(206);
+        pivot.setAngleDegrees(212);
         intake.setWristDegree(0);
         intake.largeOpen();
         intake.hingeToDegree(75);
-//        robotController.driveStraight(40.0, 90.0, DRIVE_SPEED, 0);
+        robotController.driveStraight(35.0, 100.0, DRIVE_SPEED, 0);
         if (robotController.getCurrentAprilTagID() == 11) {
-            robotController.aprilTagDrive(-56.4, 57.4, 0, DRIVE_SPEED);
+            robotController.aprilTagDrive(-56.4, 57.4, 0, DRIVE_SPEED, false);
         } else {
-            robotController.aprilTagDrive(56.4, -57.4, 0, DRIVE_SPEED);
+            robotController.aprilTagDrive(56.4, -57.4, 0, DRIVE_SPEED, true);
         }
 
-        robotController.driveStraight(12, -180, DRIVE_SPEED - 0.3, 0.0);
+        robotController.driveStraight(13, -180, DRIVE_SPEED - 0.3, 0.0);
         robotController.holdHeading(0,0.2);
         intake.close();
         robotController.holdHeading(0,0.1);
@@ -138,32 +143,32 @@ public class AutoObservation3Specimen extends LinearOpMode {
         intake.hingeToDegree(-30);
         robotController.holdHeading(0,0.2);
         intake.tinyOpen();
-        viperSlide.setTargetPosition(1095);
+        viperSlide.setTargetPosition(1120);
 
         robotController.driveStraight(45.6946, -71.8014, DRIVE_SPEED, 0);
         intake.close();
-        robotController.driveStraight(17.0, -0.0, DRIVE_SPEED - 0.2, 0);
+        robotController.driveStraight(15.0, -0.0, DRIVE_SPEED - 0.2, 0, true, true);
 
-        viperSlide.setTargetPosition(1670);
+        viperSlide.setTargetPosition(1695);
         viperSlide.waitForFinish();
         intake.open();
 
         robotController.holdHeading(0,0.2);
-        robotController.driveStraight(5.0, -180, DRIVE_SPEED, 0, false);
+        robotController.driveStraight(3.0, -180, DRIVE_SPEED, 0, false);
         viperSlide.setTargetPosition(ViperSlide.MIN_POSITION + 20);
         robotController.holdHeading(0,0.2);
-        pivot.setAngleDegrees(206);
+        pivot.setAngleDegrees(212);
         intake.setWristDegree(0);
         intake.largeOpen();
         intake.hingeToDegree(75);
-//        robotController.driveStraight(40.0, 90.0, DRIVE_SPEED, 0);
-        if (robotController.getCurrentAprilTagID() == 11) {
-            robotController.aprilTagDrive(-56.4, 57.4, 0, DRIVE_SPEED);
-        } else {
-            robotController.aprilTagDrive(56.4, -57.4, 0, DRIVE_SPEED);
-        }
+        robotController.driveStraight(41.0, 110.0, DRIVE_SPEED, 0);
+//        if (robotController.getCurrentAprilTagID() == 11) {
+//            robotController.aprilTagDrive(-56.4, 57.4, 0, DRIVE_SPEED);
+//        } else {
+//            robotController.aprilTagDrive(56.4, -57.4, 0, DRIVE_SPEED);
+//        }
 
-        robotController.driveStraight(14, -180, DRIVE_SPEED - 0.3, 0.0);
+        robotController.driveStraight(11, -180, DRIVE_SPEED - 0.3, 0.0);
         robotController.holdHeading(0,0.2);
         intake.close();
         robotController.holdHeading(0,0.1);
@@ -172,21 +177,21 @@ public class AutoObservation3Specimen extends LinearOpMode {
         intake.hingeToDegree(-30);
         robotController.holdHeading(0,0.2);
         intake.tinyOpen();
-        viperSlide.setTargetPosition(1095);
+        viperSlide.setTargetPosition(1120);
 
         robotController.driveStraight(43.6946, -71.8014, DRIVE_SPEED, 0);
         intake.close();
-        robotController.driveStraight(17.0, -0.0, DRIVE_SPEED - 0.2, 0);
+        robotController.driveStraight(15.0, -0.0, DRIVE_SPEED - 0.2, 0, true, true);
 
-        viperSlide.setTargetPosition(1670);
+        viperSlide.setTargetPosition(1695);
         viperSlide.waitForFinish();
         intake.open();
 
         robotController.holdHeading(0,0.2);
         intake.hingeToDegree(50);
         viperSlide.setTargetPosition(ViperSlide.MIN_POSITION + 20);
-        robotController.driveStraight(10, -180, DRIVE_SPEED, 0);
-
+        robotController.driveStraight(10, -180, DRIVE_SPEED, 0, false);
+        robotController.driveStraight(50, 110, 1.0, 0);
 
         robotController.holdHeading(0,100);
 
@@ -232,12 +237,13 @@ public class AutoObservation3Specimen extends LinearOpMode {
                 520
         );
         intake = new Intake(hardwareMap);
+        TouchSensor limitSwitch = hardwareMap.get(TouchSensor.class, "LIMITSWITCH");
         WebcamName camera = hardwareMap.get(WebcamName.class, "Webcam 1");
         Position cameraPosition = new Position(DistanceUnit.INCH,
                 -7, 5.6, 7, 0);
         YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,
                 -90, -82, 14, 0);
-        robotController = new RobotControllerAuto(backLeft, backRight, frontLeft, frontRight, gyro, camera, 0, 0, -180, cameraPosition, cameraOrientation, this);
+        robotController = new RobotControllerAuto(backLeft, backRight, frontLeft, frontRight, gyro, limitSwitch, camera, 0, 0, -180, cameraPosition, cameraOrientation, this);
 
         telemetry.addData("Status", "Initialized");
     }

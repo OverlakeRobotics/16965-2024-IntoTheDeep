@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
+import android.text.method.Touch;
+
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -7,7 +9,9 @@ import com.qualcomm.hardware.sparkfun.SparkFunOTOS;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -19,7 +23,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 @Config
 @Autonomous(name="PID Tuner", group="Robot")
 public class PIDTuner extends LinearOpMode {
-    public static double DRIVE_SPEED = 0.8; // 2.7 + 0.75;
+    public static double DRIVE_SPEED = 0.85; // 2.7 + 0.75;
     public static double TURN_SPEED = 2.0;
     private RobotControllerAuto robotController;
     private final ElapsedTime runtime = new ElapsedTime();
@@ -35,21 +39,58 @@ public class PIDTuner extends LinearOpMode {
     private Intake intake;
     @Override
     public void runOpMode() {
-        // Initialize
         initialize();
         waitForStart();
-        robotController.holdHeading(0,2);
-//        robotController.turnTo(90, TURN_SPEED);
-//        robotController.driveStraight(driveDistance, driveDirection, DRIVE_SPEED, 0);
-//        robotController.driveStraight(driveDistance2, driveDirection2, 0);
-        robotController.driveStraight(24, 0.0, DRIVE_SPEED, 0);
+        intake.close();
+
+        // place first specimen
+        pivot.setTargetPosition(pivot.getCurrentPosition()); //1277
+
+        robotController.driveStraight(31.0, 0.0, DRIVE_SPEED - 0.2, 0, true, true);
+        robotController.driveStraight(4.0, 180.0, DRIVE_SPEED, 0);
+        robotController.driveStraight(5.0, 180.0, DRIVE_SPEED, 0);
+        robotController.driveStraight(24.5, 90.0, DRIVE_SPEED, 0);
+//        if (robotController.getCurrentAprilTagID() == 11) {
+//            robotController.aprilTagDrive(-43.4, 51.8, 0, DRIVE_SPEED);
+//        } else {
+//            robotController.aprilTagDrive(43.4, -51.8, 0, DRIVE_SPEED);
+//        }
+        robotController.driveStraight(28, 0.0, DRIVE_SPEED, 0);
         robotController.driveStraight(10.5, 90.0, DRIVE_SPEED, 0);
-        robotController.driveStraight(35.0, 180.0, DRIVE_SPEED, 0);
-        robotController.driveStraight(35.0, 0.0, DRIVE_SPEED, 0);
+        robotController.driveStraight(39.0, 180.0, DRIVE_SPEED, 0);
+        robotController.driveStraight(39.0, 0.0, DRIVE_SPEED, 0);
         robotController.driveStraight(10.5, 90.0, DRIVE_SPEED, 0);
-        robotController.driveStraight(35.0, 180.0, DRIVE_SPEED, 0);
-        robotController.holdHeading(0, 100);
-//        robotController.sleep(100);
+        robotController.driveStraight(34.0, 180.0, DRIVE_SPEED, 0);
+        robotController.driveStraight(11.0, 180.0, DRIVE_SPEED - 0.3, 0);
+//        robotController.driveStraight(8, -45.0, DRIVE_SPEED, 0);
+//        robotController.driveStraight(10, -180, DRIVE_SPEED - 0.3, 0.0);
+        robotController.driveStraight(52, -70.6992, DRIVE_SPEED, 0);
+        robotController.driveStraight(14.0, -0.0, DRIVE_SPEED - 0.2, 0, true, true);
+        robotController.driveStraight(3.0, -180, DRIVE_SPEED, 0);
+        robotController.driveStraight(35.0, 100.0, DRIVE_SPEED, 0, false);
+        if (robotController.getCurrentAprilTagID() == 11) {
+            robotController.aprilTagDrive(-56.4, 57.4, 0, DRIVE_SPEED, false);
+        } else {
+            robotController.aprilTagDrive(56.4, -57.4, 0, DRIVE_SPEED, true);
+        }
+        robotController.driveStraight(12, -180, DRIVE_SPEED - 0.3, 0.0);
+        robotController.driveStraight(45.6946, -71.8014, DRIVE_SPEED, 0);
+        robotController.driveStraight(15.0, -0.0, DRIVE_SPEED - 0.2, 0, true, true);
+        robotController.driveStraight(3.0, -180, DRIVE_SPEED, 0);
+        robotController.driveStraight(41.0, 110.0, DRIVE_SPEED, 0);
+//        if (robotController.getCurrentAprilTagID() == 11) {
+//            robotController.aprilTagDrive(-56.4, 57.4, 0, DRIVE_SPEED);
+//        } else {
+//            robotController.aprilTagDrive(56.4, -57.4, 0, DRIVE_SPEED);
+//        }
+        robotController.driveStraight(11, -180, DRIVE_SPEED - 0.3, 0.0);
+        robotController.driveStraight(43.6946, -71.8014, DRIVE_SPEED, 0);
+        robotController.driveStraight(15.0, -0.0, DRIVE_SPEED - 0.2, 0, true, true);
+
+        robotController.driveStraight(10, -180, DRIVE_SPEED, 0, false);
+        robotController.driveStraight(50, 110, 1.0, 0);
+
+        robotController.holdHeading(0,100);
     }
 
     public void initialize() {
@@ -58,30 +99,26 @@ public class PIDTuner extends LinearOpMode {
         DcMotorEx backRight = hardwareMap.get(DcMotorEx.class, "BACKRIGHT");
         DcMotorEx frontLeft = hardwareMap.get(DcMotorEx.class, "FRONTLEFT");
         DcMotorEx frontRight = hardwareMap.get(DcMotorEx.class, "FRONTRIGHT");
-//        claw = hardwareMap.get(Servo.class, "CLAWLEFT");
-//        claw.setDirection(Servo.Direction.REVERSE);
-//        wrist = hardwareMap.get(Servo.class, "CLAWRIGHT");
 
         IMU gyro = hardwareMap.get(IMU.class, "imu2");
 
         viperSlide = new ViperSlide(
                 hardwareMap.get(DcMotorEx.class, "VIPERLEFT"),
-                hardwareMap.get(DcMotorEx.class, "VIPERRIGHT"),
-                false
+                hardwareMap.get(DcMotorEx.class, "VIPERRIGHT")
         );
         pivot = new Pivot(
                 hardwareMap.get(DcMotorEx.class, "PIVOTLEFT"),
                 hardwareMap.get(DcMotorEx.class, "PIVOTRIGHT"),
-                0,
-                false
+                520
         );
         intake = new Intake(hardwareMap);
+        TouchSensor limitSwitch = hardwareMap.get(TouchSensor.class, "LIMITSWITCH");
         WebcamName camera = hardwareMap.get(WebcamName.class, "Webcam 1");
         Position cameraPosition = new Position(DistanceUnit.INCH,
                 -7, 5.6, 7, 0);
         YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,
                 -90, -82, 14, 0);
-        robotController = new RobotControllerAuto(backLeft, backRight, frontLeft, frontRight, gyro, camera, 0, 0, -180, cameraPosition, cameraOrientation, this);
+        robotController = new RobotControllerAuto(backLeft, backRight, frontLeft, frontRight, gyro, limitSwitch, camera, 0, 0, -180, cameraPosition, cameraOrientation, this);
 
         telemetry.addData("Status", "Initialized");
     }

@@ -5,7 +5,9 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -57,12 +59,13 @@ public class AprilTagErrorTest extends LinearOpMode {
                 520
         );
         intake = new Intake(hardwareMap);
+        TouchSensor limitSwitch = hardwareMap.get(TouchSensor.class, "LIMITSWITCH");
         WebcamName camera = hardwareMap.get(WebcamName.class, "Webcam 1");
         Position cameraPosition = new Position(DistanceUnit.INCH,
                 -7, 5.6, 7, 0);
         YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,
                 -90, -82, 14, 0);
-        robotController = new RobotControllerAuto(backLeft, backRight, frontLeft, frontRight, gyro, camera, 0, 0, -180, cameraPosition, cameraOrientation, this);
+        robotController = new RobotControllerAuto(backLeft, backRight, frontLeft, frontRight, gyro, limitSwitch, camera, 0, 0, -180, cameraPosition, cameraOrientation, this);
 
         telemetry.addData("Status", "Initialized");
     }

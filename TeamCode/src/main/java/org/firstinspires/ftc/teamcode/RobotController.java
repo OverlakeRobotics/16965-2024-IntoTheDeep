@@ -637,10 +637,6 @@ public class RobotController {
     //                                direction of the robot, or the direction the robot was
     //                                initialized in.
     public void continuousDrive(double forwardPower, double strafePower, double turn, boolean isFieldCentric) {
-        backLeft.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-        backRight.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-        frontLeft.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-        frontRight.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         double currentHeading = getAngleImuDegrees();
         double forward;
         double strafe;

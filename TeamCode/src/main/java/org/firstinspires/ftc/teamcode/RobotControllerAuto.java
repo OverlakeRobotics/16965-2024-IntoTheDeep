@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
+import android.text.method.Touch;
 import android.util.Log;
 
 import com.acmerobotics.dashboard.config.Config;
@@ -9,11 +10,15 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
@@ -22,6 +27,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Config
 public class RobotControllerAuto {
@@ -32,12 +38,14 @@ public class RobotControllerAuto {
     private final DcMotor backLeftDrive;
     private final DcMotor backRightDrive;
     private final IMU imu;
+    private final TouchSensor limitSwitch;
     private double xPos;
     private double yPos;
     private double hPos;
     private double errorX;
     private double errorY;
     private int currentAprilTagID;
+    private boolean canSeeAprilTag;
     private final LinearOpMode robot;
     private final AprilTagProcessor aprilTag;
     private final VisionPortal visionPortal;
@@ -61,7 +69,7 @@ public class RobotControllerAuto {
     static final double     HEADING_THRESHOLD       = 1.0;
 
     static final double     P_TURN_GAIN             = 0.02;
-    static final double     P_DRIVE_GAIN            = 0.03;
+    public static double     P_DRIVE_GAIN            = 0.02;
     public static double Kp_APRIL_FORWARD = 0.04; // 0.034;
     public static double Kd_APRIL_FORWARD= 0.000839;
     public static double Ki_APRIL_FORWARD = 0; // 0.09;
@@ -76,7 +84,7 @@ public class RobotControllerAuto {
 
     public RobotControllerAuto(DcMotorEx frontLeftDrive, DcMotorEx frontRightDrive,
                                DcMotorEx backLeftDrive, DcMotorEx backRightDrive,
-                               IMU imu, WebcamName camera, double startX,
+                               IMU imu, TouchSensor limitSwitch, WebcamName camera, double startX,
                                double startY, double startH, Position cameraOffset,
                                YawPitchRollAngles cameraAngles, LinearOpMode robot) {
 
@@ -105,6 +113,8 @@ public class RobotControllerAuto {
         imu.initialize(new IMU.Parameters(orientationOnRobot));
         imu.resetYaw();
 
+        this.limitSwitch = limitSwitch;
+
         this.aprilTag = new AprilTagProcessor.Builder()
                 .setCameraPose(cameraOffset, cameraAngles)
                 .build();
@@ -118,6 +128,8 @@ public class RobotControllerAuto {
         aprilTagPIDForward = new PIDController(Kp_APRIL_FORWARD, Ki_APRIL_FORWARD, Kd_APRIL_FORWARD);
 
         this.robot = robot;
+
+        setManualExposure(6, 250);
 
         this.hPos = startH;
         this.xPos = startX;
@@ -134,7 +146,7 @@ public class RobotControllerAuto {
      * @param moveAngle Field-oriented direction to move (in degrees, 0 = forward on field)
      * @param heading Desired robot heading to maintain
      */
-    public void driveStraight(double distance, double moveAngle, double maxDriveSpeed, double heading, boolean doSlowDown) {
+    public void driveStraight(double distance, double moveAngle, double maxDriveSpeed, double heading, boolean doSlowDown, boolean stopWhenLimitSwitchPressed) {
         if (!robot.opModeIsActive()) return;
 
         // Uses errorX and errorY to calculate a new distance and moveAngle, adjusting the endpoint by errorX and errorY.
@@ -207,7 +219,7 @@ public class RobotControllerAuto {
             else numStalledLoops = 0;
 
             robot.telemetry.addData("distance in", distanceToDestination);
-            double scaleFactor = Math.min(1.0, 0.2 + (distanceToDestination / COUNTS_LEFT_TO_SLOW_DOWN));
+            double scaleFactor = Math.min(1.0, 0.1 + (distanceToDestination / COUNTS_LEFT_TO_SLOW_DOWN));
             if (!doSlowDown) scaleFactor = 1;
             double drive = rawDrive * scaleFactor;
             double strafe = rawStrafe * scaleFactor;
@@ -231,7 +243,7 @@ public class RobotControllerAuto {
             moveRobot(drive, strafe, turnCorrection);
             sendTelemetry(true);
 
-            if (distanceToDestination < 60) {
+            if (distanceToDestination < 60 || stopWhenLimitSwitchPressed && limitSwitch.isPressed()) {
                 break;
             }
         } while (robot.opModeIsActive() && numStalledLoops < 3 &&
@@ -240,21 +252,25 @@ public class RobotControllerAuto {
 
         // Stop motors and revert to RUN_USING_ENCODER
         if (doSlowDown) {
-//            moveRobot(0, 0, 0);
+//            moveRobot(0, 0, getSteeringCorrection(heading, P_DRIVE_GAIN) * 2);
             stopRobot();
         }
-        frontLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        frontRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        backLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        backRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+//        frontLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+//        frontRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+//        backLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+//        backRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 
     public void driveStraight(double distance, double moveAngle, double heading) {
-        driveStraight(distance, moveAngle, DEFAULT_DRIVE_SPEED, heading, true);
+        driveStraight(distance, moveAngle, DEFAULT_DRIVE_SPEED, heading, true, false);
     }
 
     public void driveStraight(double distance, double moveAngle, double maxDriveSpeed, double heading) {
-        driveStraight(distance, moveAngle, maxDriveSpeed, heading, true);
+        driveStraight(distance, moveAngle, maxDriveSpeed, heading, true, false);
+    }
+
+    public void driveStraight(double distance, double moveAngle, double maxDriveSpeed, double heading, boolean doSlowDown) {
+        driveStraight(distance, moveAngle, maxDriveSpeed, heading, doSlowDown, false);
     }
 
     // Implementation of what david was talking about. Instead of lining up with a point, it tracks
@@ -346,8 +362,10 @@ public class RobotControllerAuto {
                 yPos = detection.robotPose.getPosition().y;
                 hPos = getHeading();
                 currentAprilTagID = detection.id;
+                canSeeAprilTag = true;
                 break;
             }
+            canSeeAprilTag = false;
         }
     }
 
@@ -355,13 +373,21 @@ public class RobotControllerAuto {
         return currentAprilTagID;
     }
 
-    public void aprilTagDrive(double wantedX, double wantedY, double wantedH, double speed, double distToStop) throws RuntimeException {
+    public boolean canSeeAprilTag() {
+        return canSeeAprilTag;
+    }
+
+    public void aprilTagDrive(double wantedX, double wantedY, double wantedH, double speed, double distToStop, boolean isRedSide) throws RuntimeException {
+        frontLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        frontRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        backLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        backRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         double distance = Math.sqrt(Math.pow(wantedX - xPos, 2) + Math.pow(wantedY - yPos, 2));
         int consecutiveCorrectIterations = 0;
         aprilTagPIDForward.reset();
         aprilTagPIDStrafe.reset();
 
-        while (consecutiveCorrectIterations < 1 && robot.opModeIsActive()) {
+        while (consecutiveCorrectIterations < 2 && robot.opModeIsActive()) {
             if (distance > distToStop || Math.abs(getHeading() - wantedH) > HEADING_THRESHOLD) {
                 consecutiveCorrectIterations = 0;
             } else {
@@ -384,7 +410,8 @@ public class RobotControllerAuto {
             Log.d("April Tag", "strafe pid: " + aprilTagPIDStrafe.calculate(xPos, wantedX));
             Log.d("April Tag", "forward pid: " + aprilTagPIDForward.calculate(yPos, wantedY));
             Log.d("April Tag", "dx: " + dx + ", dy: " + dy);
-            moveRobot(forward, strafe, getSteeringCorrection(wantedH, P_DRIVE_GAIN));
+            if (isRedSide) moveRobot(-forward, -strafe, getSteeringCorrection(wantedH, P_DRIVE_GAIN));
+            else moveRobot(forward, strafe, getSteeringCorrection(wantedH, P_DRIVE_GAIN));
             distance = Math.sqrt(Math.pow(wantedX - xPos, 2) + Math.pow(wantedY - yPos, 2));
         }
 //        moveRobot(0, 0, 0);
@@ -393,8 +420,8 @@ public class RobotControllerAuto {
         errorY = wantedY - yPos;
     }
 
-    public void aprilTagDrive(double wantedX, double wantedY, double wantedH, double speed) throws RuntimeException {
-        aprilTagDrive(wantedX, wantedY, wantedH, speed, MIN_DIST_TO_STOP);
+    public void aprilTagDrive(double wantedX, double wantedY, double wantedH, double speed, boolean isRedSide) throws RuntimeException {
+        aprilTagDrive(wantedX, wantedY, wantedH, speed, MIN_DIST_TO_STOP, isRedSide);
     }
 
     public void aprilTagDriveEncoders(double wantedX, double wantedY, double wantedH, double speed) throws RuntimeException {
@@ -545,8 +572,8 @@ public class RobotControllerAuto {
         backLeftDrive.setPower(bl);
         backRightDrive.setPower(br);
 
-//        updateRobotPositionWithApril();
-        updateRobotPosition();
+        updateRobotPositionWithApril();
+//        updateRobotPosition();
     }
 
     public void stopRobot() {
@@ -560,11 +587,50 @@ public class RobotControllerAuto {
         backRightDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         frontRightDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-        backLeftDrive.setPower(0.2);
-        frontLeftDrive.setPower(0.2);
-        backRightDrive.setPower(0.2);
-        frontRightDrive.setPower(0.2);
+        backLeftDrive.setPower(0.4);
+        frontLeftDrive.setPower(0.4);
+        backRightDrive.setPower(0.4);
+        frontRightDrive.setPower(0.4);
         updateRobotPosition();
+    }
+
+    private boolean setManualExposure(int exposureMS, int gain) {
+        // Ensure Vision Portal has been setup.
+        if (visionPortal == null) {
+            return false;
+        }
+
+        // Wait for the camera to be open
+        if (visionPortal.getCameraState() != VisionPortal.CameraState.STREAMING) {
+            robot.telemetry.addData("Camera", "Waiting");
+            robot.telemetry.update();
+            while (!robot.isStopRequested() && (visionPortal.getCameraState() != VisionPortal.CameraState.STREAMING)) {
+                robot.sleep(20);
+            }
+            robot.telemetry.addData("Camera", "Ready");
+            robot.telemetry.update();
+        }
+
+        // Set camera controls unless we are stopping.
+        if (!robot.isStopRequested())
+        {
+            // Set exposure.  Make sure we are in Manual Mode for these values to take effect.
+            ExposureControl exposureControl = visionPortal.getCameraControl(ExposureControl.class);
+            if (exposureControl.getMode() != ExposureControl.Mode.Manual) {
+                exposureControl.setMode(ExposureControl.Mode.Manual);
+                robot.sleep(50);
+            }
+            exposureControl.setExposure((long)exposureMS, TimeUnit.MILLISECONDS);
+            robot.sleep(20);
+
+            // Set Gain.
+            GainControl gainControl = visionPortal.getCameraControl(GainControl.class);
+            gainControl.setGain(gain);
+            robot.sleep(20);
+            return (true);
+        } else {
+            return (false);
+        }
     }
 
     private void sendTelemetry(boolean straight) {

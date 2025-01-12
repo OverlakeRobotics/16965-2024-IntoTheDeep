@@ -89,6 +89,7 @@ public class MecanumDriver extends OpMode {
     private boolean isPickupSubReady = false;
     private boolean isHingeDownReady = false;
     private boolean isRetractVipersReady = false;
+    private boolean isHangReady = false;
     private boolean lastRightBumper = false;
     private boolean lastXButton = false;
     private double placeSpecimenStartTime;
@@ -158,18 +159,22 @@ public class MecanumDriver extends OpMode {
     @Override
     public void loop() {
         // Drivetrain
-        if (!placingSpecimen) {
-            if (gamepad1.left_stick_y == 0 && gamepad1.left_stick_x == 0 && gamepad1.right_stick_x == 0) {
-                numLoopsStopped++;
-                if (numLoopsStopped >= 3)
-                    robotController.stop();
-            } else {
-                numLoopsStopped = 0;
-                robotController.continuousDrive(gamepad1.left_stick_y * SPEED_MULTIPLIER * FORWARD_POWER,
-                        gamepad1.left_stick_x * SPEED_MULTIPLIER * STRAFE_POWER,
-                        gamepad1.right_stick_x * TURN_POWER, isFieldCentric);
-            }
-        }
+        robotController.continuousDrive(gamepad1.left_stick_y * SPEED_MULTIPLIER * FORWARD_POWER,
+                gamepad1.left_stick_x * SPEED_MULTIPLIER * STRAFE_POWER,
+                gamepad1.right_stick_x * TURN_POWER, isFieldCentric);
+        // bad
+//        if (!placingSpecimen) {
+//            if (gamepad1.left_stick_y == 0 && gamepad1.left_stick_x == 0 && gamepad1.right_stick_x == 0) {
+//                numLoopsStopped++;
+//                if (numLoopsStopped >= 3)
+//                    robotController.stop();
+//            } else {
+//                numLoopsStopped = 0;
+//                robotController.continuousDrive(gamepad1.left_stick_y * SPEED_MULTIPLIER * FORWARD_POWER,
+//                        gamepad1.left_stick_x * SPEED_MULTIPLIER * STRAFE_POWER,
+//                        gamepad1.right_stick_x * TURN_POWER, isFieldCentric);
+//            }
+//        }
         double extensionBeyondChassis = viperSlide.getExtensionBeyondChassis(pivot.getAngleDegrees());
         telemetry.addData("Viper Extension Beyond Chassis", extensionBeyondChassis);
         double pivotPower = Math.min(MAX_PIVOT_VELOCITY, BASE_PIVOT_VELOCITY + (MAX_PIVOT_VELOCITY - BASE_PIVOT_VELOCITY) * (runtime.seconds() - pivotStartedTime) / PIVOT_RAMP_TIME);
@@ -194,6 +199,7 @@ public class MecanumDriver extends OpMode {
                 pivot.move(pivotPower);
             }
             isSpecimenReady = false;
+            isHangReady = false;
         } else if (gamepad2.dpad_up) {
             if (pivot.getAngleDegrees() > 90 && !isInSpecimenPickupMacro) {
                 pivot.setAngleDegrees(90);
@@ -205,6 +211,7 @@ public class MecanumDriver extends OpMode {
                 pivot.move(-pivotPower);
             }
             isSpecimenReady = false;
+            isHangReady = false;
         } else {
             pivot.hold();
             pivotStarted = false;
@@ -230,6 +237,7 @@ public class MecanumDriver extends OpMode {
                 viperSlide.setTargetPosition((int) (maxViperExtension * ViperSlide.MOVE_COUNTS_PER_INCH));
             }
             isSpecimenReady = false;
+            isHangReady = false;
         } else if (triggerPower < 0 && !isInSpecimenPickupMacro) {
             int currentVelocity = VIPER_VELOCITY_CONSTANT;
             if (!viperManualDoneRamping) currentVelocity = (int) rampManual.scaleX(runtime.seconds());
@@ -238,6 +246,7 @@ public class MecanumDriver extends OpMode {
                 viperManualDoneRamping = true;
             }
             isSpecimenReady = false;
+            isHangReady = false;
         } else {
             viperSlide.hold();
         }
@@ -249,8 +258,8 @@ public class MecanumDriver extends OpMode {
                 intake.close();
             } else {
                 intake.open();
+                isSpecimenReady = false;
             }
-            isSpecimenReady = false;
         }
 
         // Tiny Open for fixing specimen
@@ -290,6 +299,7 @@ public class MecanumDriver extends OpMode {
             isSpecimenReady = false;
             isHingeDownReady = false;
             isRetractVipersReady = false;
+            isHangReady = false;
         }
 
         // Place Specimen Macro
@@ -323,6 +333,7 @@ public class MecanumDriver extends OpMode {
             isHingeDownReady = false;
             isRetractVipersReady = false;
             isInSpecimenPickupMacro = false;
+            isHangReady = false;
         }
 
         if (placingSpecimen && runtime.seconds() - placeSpecimenStartTime > 0.05 && runtime.seconds() - placeSpecimenStartTime < 0.25) {
@@ -342,6 +353,7 @@ public class MecanumDriver extends OpMode {
             isRetractVipersReady = false;
             isSpecimenReady = false;
             isInSpecimenPickupMacro = false;
+            isHangReady = false;
         }
 
         if (bMacroActivated && runtime.seconds() - bMacroStartedTime >= 0.25) {
@@ -377,6 +389,7 @@ public class MecanumDriver extends OpMode {
             }
             isSpecimenReady = false;
             isInSpecimenPickupMacro = false;
+            isHangReady = false;
         }
 
         // Place Basket Macro
@@ -392,6 +405,7 @@ public class MecanumDriver extends OpMode {
             isRetractVipersReady = false;
             isSpecimenReady = false;
             isInSpecimenPickupMacro = false;
+            isHangReady = false;
         }
 
         if (gamepad2.dpad_left) {
@@ -402,7 +416,6 @@ public class MecanumDriver extends OpMode {
             isSpecimenReady = false;
         }
 
-        // needs fixing
         if (gamepad1.dpad_right && gamepad1.b) {
             viperSlide.resetEncoders();
         }
@@ -416,6 +429,29 @@ public class MecanumDriver extends OpMode {
             if (power >= MAX_VIPER_POWER) {
                 viperRamping = false;
             }
+        }
+
+        // hang
+        if (gamepad1.y) {
+            pivot.setTargetPosition(-730);
+            intake.hingeToDegree(-30);
+            viperSlide.setTargetPosition(1625);
+        }
+        // -1095
+        if (gamepad1.x) {
+            if (!isHangReady) {
+                pivot.setTargetPosition(-1095);
+                isHangReady = true;
+            } else {
+                bMacroStartedTime = runtime.seconds();
+                bMacroActivated = true;
+                isHangReady = false;
+            }
+            isPickupSubReady = false;
+            isHingeDownReady = false;
+            isRetractVipersReady = false;
+            isSpecimenReady = false;
+            isInSpecimenPickupMacro = false;
         }
 
 //        SparkFunOTOS.Pose2D position = photoSensor.getPosition();
