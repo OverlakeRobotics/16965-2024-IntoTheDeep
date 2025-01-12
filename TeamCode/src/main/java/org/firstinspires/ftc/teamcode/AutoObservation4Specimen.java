@@ -5,7 +5,6 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -16,8 +15,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
-@Autonomous(name="3 Specimen Auto Observation", group="Robot")
-public class AutoObservation3Specimen extends LinearOpMode {
+@Autonomous(name="4 Specimen Auto Observation", group="Robot")
+public class AutoObservation4Specimen extends LinearOpMode {
     public static final double DRIVE_SPEED = 0.85;
     public static final double TURN_SPEED = 0.75;
     private RobotControllerAuto robotController;

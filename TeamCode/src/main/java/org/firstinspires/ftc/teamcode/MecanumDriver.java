@@ -54,7 +54,7 @@ public class MecanumDriver extends OpMode {
     private int viperPosition = 0;
     private int hingeDegree = 0;
     private double timeAPressed = 0;
-    private double timeXPressed = 0;
+    private double timeG1XPressed = 0;
     private final static double TURN_POWER = 2.3;
     private final static double FORWARD_POWER = 1.0;
     private final static int VIPER_VELOCITY_CONSTANT = 1800;
@@ -67,6 +67,7 @@ public class MecanumDriver extends OpMode {
     private final static double STRAFE_POWER = FORWARD_POWER * 1.192;
     private final static double SPEED_MULTIPLIER = 2.7;
     private final static double INTAKE_COOLDOWN = 0.25;
+    private final static double HANG_COOLDOWN = 0.25;
     public static final double MAX_EXTENSION_BACK = 7.0;
     public static final double MAX_EXTENSION_FORWARD = 17.0;
     public static final double VIPER_RAMP_TIME_SECONDS = 0.3;
@@ -438,7 +439,8 @@ public class MecanumDriver extends OpMode {
             viperSlide.setTargetPosition(1625);
         }
         // -1095
-        if (gamepad1.x) {
+        if (gamepad1.x && runtime.seconds() - timeG1XPressed >= HANG_COOLDOWN) {
+            timeG1XPressed = runtime.seconds();
             if (!isHangReady) {
                 pivot.setTargetPosition(-1095);
                 isHangReady = true;
